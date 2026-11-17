@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cube Timer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='37' y='8' width='26' height='26' rx='4' fill='%23d50000'/%3E%3Crect x='66' y='8' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='8' y='37' width='26' height='26' rx='4' fill='%2300a651'/%3E%3Crect x='37' y='37' width='26' height='26' rx='4' fill='%23ffd500'/%3E%3Crect x='66' y='37' width='26' height='26' rx='4' fill='%23ff6d00'/%3E%3Crect x='8' y='66' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='37' y='66' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='66' y='66' width='26' height='26' rx='4' fill='%2300a651'/%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #121212; color: #e0e0e0;
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100dvh; display: flex; flex-direction: column;
+    overscroll-behavior: none;
+  }
+  .hidden { display: none !important; }
+  button {
+    background: #2a2a2a; color: #e0e0e0; border: 1px solid #444;
+    border-radius: 8px; padding: 10px 14px; font-size: 15px; cursor: pointer;
+  }
+  button:hover { background: #383838; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.danger { border-color: #7a2e2e; color: #ff8a80; }
+  button.primary { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+
+  /* ---- Màn hình Timer ---- */
+  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .scramble {
+    text-align: center; font-weight: 700;
+    font-size: clamp(20px, 3.6vw, 30px); line-height: 1.45;
+    padding: 18px 16px 8px; min-height: 2.6em; word-break: break-word;
+  }
+  .layout { display: flex; flex: 1; min-height: 0; gap: 16px; padding: 0 16px 16px; }
+  .timer-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #timer-zone {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; cursor: pointer; min-height: 220px;
+  }
+  .clock {
+    font-family: 'SF Mono', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-weight: 700; font-size: clamp(64px, 15vw, 150px); line-height: 1;
+    color: #fff; text-align: center;
+  }
+  .clock.ready { color: #4caf50; }
+  .clock.hold { color: #ff5252; }
+  .clock.warn-yellow { color: #ffeb3b; }
+  .clock.warn-red { color: #ff5252; }
+  .hint { margin-top: 16px; color: #999; font-size: 16px; text-align: center; }
+  .status { margin-top: 8px; color: #ff8a80; font-size: 15px; min-height: 1.2em; text-align: center; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 0 4px; }
+
+  .stats {
+    width: 240px; flex-shrink: 0; background: #1e1e1e; border-radius: 12px;
+    padding: 14px; align-self: flex-start; position: sticky; top: 12px;
+  }
+  .stats h3 { margin: 0 0 10px; font-size: 15px; color: #bbb; font-weight: 600; }
+  .stats table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .stats td { padding: 5px 2px; }
+  .stats td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
+  .stats th { text-align: right; color: #888; font-size: 12px; font-weight: 600; padding-bottom: 4px; }
+  .stats th:first-child { text-align: left; }
+  .stats tr.total td { border-top: 1px solid #333; font-weight: 700; }
+  body.running .hide-while-running { display: none !important; }
+  body.running #timer-zone { min-height: 0; }
+
+  /* ---- Trang Lịch sử ---- */
+  #history-view { padding: 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+  .history-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .history-head h2 { margin: 0; flex: 1; font-size: 22px; }
+  .history-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  #history-summary { background: #1e1e1e; border-radius: 12px; padding: 14px; margin: 14px 0; }
+  #history-summary .sum-line { display: flex; gap: 24px; flex-wrap: wrap; font-size: 15px; margin-bottom: 10px; }
+  #history-summary .sum-line b { font-family: 'SF Mono', Consolas, monospace; }
+  #history-summary table { width: 100%; border-collapse: collapse; font-size: 15px; max-width: 420px; }
+  #history-summary td { padding: 4px 2px; }
+  #history-summary td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
+  #history-summary th { text-align: right; color: #888; font-size: 12px; font-weight: 600; }
+  #history-summary th:first-child { text-align: left; }
+  #chart { width: 100%; background: #1e1e1e; border-radius: 12px; margin-bottom: 14px; display: block; }
+  .solve-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: #1e1e1e; border-radius: 8px; margin-bottom: 6px; cursor: pointer;
+  }
+  .solve-row:hover { background: #262626; }
+  .solve-row .idx { color: #888; width: 42px; flex-shrink: 0; font-size: 14px; }
+  .solve-row .time { font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 18px; width: 110px; flex-shrink: 0; }
+  .solve-row .time.dnf { color: #ff5252; }
+  .solve-row .scr { flex: 1; color: #bbb; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .solve-row .ao { color: #888; font-size: 12px; width: 205px; flex-shrink: 0; text-align: right; font-family: 'SF Mono', Consolas, monospace; }
+  .solve-row .date { color: #888; font-size: 12px; width: 108px; flex-shrink: 0; text-align: right; }
+  .empty-msg { color: #888; text-align: center; padding: 30px 0; }
+
+  /* ---- Modal ---- */
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px;
+  }
+  .modal-card { background: #1e1e1e; border-radius: 12px; padding: 20px; width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto; }
+  .modal-card h3 { margin-top: 0; }
+  .modal-card textarea { width: 100%; background: #121212; color: #e0e0e0; border: 1px solid #444; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; }
+  .modal-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .detail-line { margin: 6px 0; font-size: 15px; }
+  .detail-line b { font-family: 'SF Mono', Consolas, monospace; }
+  label.check { display: flex; gap: 8px; align-items: center; padding: 8px 0; font-size: 16px; cursor: pointer; }
+  label.check input { width: 18px; height: 18px; }
+  .note { color: #888; font-size: 14px; }
+
+  @media (max-width: 760px) {
+    .layout { flex-direction: column; }
+    .stats { width: 100%; order: -1; position: static; padding: 10px 12px; }
+    .stats table { font-size: 14px; }
+    .scramble { padding-top: 12px; }
+    .solve-row .ao, .solve-row .date { display: none; }
+    .solve-row .time { width: 92px; font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= MÀN HÌNH TIMER ================= -->
+<div id="timer-view">
+  <div id="scramble" class="scramble hide-while-running"></div>
+  <div class="layout">
+    <div class="timer-col">
+      <div id="timer-zone">
+        <div id="clock" class="clock">0:00.00</div>
+        <div id="hint" class="hint"></div>
+        <div id="status" class="status"></div>
+      </div>
+      <div class="buttons hide-while-running">
+        <button id="btn-new-scramble">Scramble mới</button>
+        <button id="btn-plus2" title="Cộng/trừ 2 giây cho lượt vừa giải">+2</button>
+        <button id="btn-dnf" title="Đánh dấu/bỏ DNF cho lượt vừa giải">DNF</button>
+        <button id="btn-del-last">Xóa lượt vừa giải</button>
+        <button id="btn-history">Lịch sử</button>
+        <button id="btn-settings">Cài đặt</button>
+      </div>
+    </div>
+    <aside id="stats" class="stats hide-while-running"></aside>
+  </div>
+</div>
+
+<!-- ================= TRANG LỊCH SỬ ================= -->
+<div id="history-view" class="hidden">
+  <div class="history-head">
+    <button id="btn-back">← Timer</button>
+    <h2>Lịch sử</h2>
+    <div class="history-actions">
+      <button id="btn-export-json">Xuất JSON</button>
+      <button id="btn-export-csv">Xuất CSV</button>
+      <button id="btn-import">Nhập JSON</button>
+      <input type="file" id="file-import" accept=".json,application/json" hidden>
+      <button id="btn-clear-all" class="danger">Xóa toàn bộ</button>
+    </div>
+  </div>
+  <div id="history-summary"></div>
+  <canvas id="chart" height="180"></canvas>
+  <div id="history-list"></div>
+</div>
+
+<!-- ================= MODAL CHI TIẾT LƯỢT GIẢI ================= -->
+<div id="detail-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="detail-title">Lượt giải</h3>
+    <div id="detail-body"></div>
+    <label for="detail-note">Ghi chú</label>
+    <textarea id="detail-note" rows="2"></textarea>
+    <div class="modal-row">
+      <button id="detail-plus2">+2</button>
+      <button id="detail-dnf">DNF</button>
+      <button id="detail-delete" class="danger">Xóa lượt này</button>
+    </div>
+    <div class="modal-row">
+      <button id="detail-save" class="primary">Lưu ghi chú</button>
+      <button id="detail-close">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL CÀI ĐẶT ================= -->
+<div id="settings-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Cài đặt</h3>
+    <label class="check"><input type="checkbox" id="set-inspection" checked> Inspection 15 giây (chuẩn WCA)</label>
+    <label class="check"><input type="checkbox" id="set-beep" checked> Âm báo ở giây thứ 8 và 12 khi nhìn trước</label>
+    <p class="note">Giữ Space hoặc chạm giữ màn hình 0.3s để sẵn sàng, thả ra để bắt đầu. Chạm bất kỳ phím/màn hình để dừng.</p>
+    <div class="modal-row">
+      <button id="settings-close" class="primary">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   PHẦN 1: HÀM THUẦN (không chạm DOM) - scramble, trung bình, định dạng.
+   Các hàm này có thể kiểm tra độc lập bằng node.
+   ===================================================================== */
+
+// --- Scramble 3x3 kiểu WCA: 20 nước, không có 2 nước liên tiếp cùng mặt,
+// --- không có 3 nước liên tiếp cùng trục (ví dụ R L R).
+const SCRAMBLE_FACES = ['U', 'D', 'R', 'L', 'F', 'B'];
+const SCRAMBLE_AXIS = { U: 0, D: 0, R: 1, L: 1, F: 2, B: 2 };
+const SCRAMBLE_SUFFIX = ['', "'", '2'];
+function generateScramble(len) {
+  len = len || 20;
+  const moves = [];
+  let prev = null, prevPrev = null;
+  while (moves.length < len) {
+    const face = SCRAMBLE_FACES[Math.floor(Math.random() * 6)];
+    if (face === prev) continue;
+    if (prev && prevPrev && SCRAMBLE_AXIS[face] === SCRAMBLE_AXIS[prev] && SCRAMBLE_AXIS[prev] === SCRAMBLE_AXIS[prevPrev]) continue;
+    moves.push(face + SCRAMBLE_SUFFIX[Math.floor(Math.random() * 3)]);
+    prevPrev = prev;
+    prev = face;
+  }
+  return moves.join(' ');
+}
+
+// --- Số lượt bị bỏ ở mỗi đầu khi tính trung bình (chuẩn WCA / csTimer):
+// --- Ao3: 0 (mean of 3, không bỏ lượt nào). Ao5: 1. Còn lại: 5% làm tròn lên
+// --- (Ao12: 1, Ao15: 1, Ao50: 3, Ao100: 5).
+function trimCount(n) {
+  if (n <= 3) return 0;
+  if (n === 5) return 1;
+  return Math.ceil(n * 0.05);
+}
+
+// --- Trung bình của N lượt cuối trong mảng solves (theo thứ tự thời gian).
+// --- Trả về { status: 'not-enough' } nếu chưa đủ N lượt,
+// --- { status: 'dnf' } nếu trung bình là DNF,
+// --- { status: 'ok', value: mili-giây } nếu tính được.
+// --- DNF được coi là lượt tệ nhất: nếu sau khi bỏ các lượt ở 2 đầu mà
+// --- vẫn còn DNF trong các lượt giữ lại thì kết quả là DNF.
+function averageOf(solves, n) {
+  if (solves.length < n) return { status: 'not-enough' };
+  const last = solves.slice(-n);
+  const trim = trimCount(n);
+  const sorted = last.slice().sort(function (a, b) {
+    if (a.time === null && b.time === null) return 0;
+    if (a.time === null) return 1;   // DNF xếp cuối (tệ nhất)
+    if (b.time === null) return -1;
+    return a.time - b.time;
+  });
+  const kept = sorted.slice(trim, sorted.length - trim);
+  if (kept.some(function (s) { return s.time === null; })) return { status: 'dnf' };
+  let sum = 0;
+  for (const s of kept) sum += s.time;
+  return { status: 'ok', value: sum / kept.length };
+}
+
+// --- Trung bình tốt nhất trong mọi cửa sổ N lượt liên tiếp.
+// --- Trả về { status: 'not-enough' | 'dnf' | 'ok', value } như averageOf.
+function bestAverageOf(solves, n) {
+  if (solves.length < n) return { status: 'not-enough' };
+  let best = null;
+  for (let i = 0; i <= solves.length - n; i++) {
+    const r = averageOf(solves.slice(i, i + n), n);
+    if (r.status === 'ok' && (best === null || r.value < best)) best = r.value;
+  }
+  if (best === null) return { status: 'dnf' };
+  return { status: 'ok', value: best };
+}
+
+// --- Lượt nhanh nhất (bỏ qua DNF). Trả về mili-giây hoặc null.
+function bestSingle(solves) {
+  let best = null;
+  for (const s of solves) {
+    if (s.time !== null && (best === null || s.time < best)) best = s.time;
+  }
+  return best;
+}
+
+// --- Trung bình cộng của các lượt không DNF. Trả về mili-giây hoặc null.
+function meanOf(solves) {
+  let sum = 0, count = 0;
+  for (const s of solves) {
+    if (s.time !== null) { sum += s.time; count++; }
+  }
+  return count === 0 ? null : sum / count;
+}
+
+// --- Định dạng thời gian: cắt (truncate) về 0.01s như WCA, dạng M:SS.cc.
+function fmt(ms) {
+  if (ms === null || ms === undefined || ms < 0) return 'DNF';
+  const totalCenti = Math.floor(ms / 10);
+  const m = Math.floor(totalCenti / 6000);
+  const s = Math.floor(totalCenti / 100) % 60;
+  const c = totalCenti % 100;
+  return m + ':' + String(s).padStart(2, '0') + '.' + String(c).padStart(2, '0');
+}
+
+// --- Định dạng trung bình: WCA làm tròn trung bình tới 0.01s gần nhất.
+function fmtAvg(ms) {
+  if (ms === null || ms === undefined) return 'DNF';
+  return fmt(Math.round(ms / 10) * 10);
+}
+
+// --- Hiển thị một lượt giải: "12.34+", "12.34" hoặc "DNF".
+function fmtSolve(s) {
+  if (s.time === null) return 'DNF';
+  return fmt(s.time) + (s.plus2 ? '+' : '');
+}
+
+// --- Hiển thị kết quả averageOf/bestAverageOf: "-" nếu chưa đủ lượt.
+function fmtAverageResult(r) {
+  if (r.status === 'not-enough') return '-';
+  if (r.status === 'dnf') return 'DNF';
+  return fmtAvg(r.value);
+}
+
+/* __PURE_END__ */
+
+/* =====================================================================
+   PHẦN 2: DỮ LIỆU (localStorage) VÀ TRẠNG THÁI
+   ===================================================================== */
+
+// Một lượt giải: { id, raw, time, plus2, scramble, date, note }
+// - raw: thời gian đo được (ms, đã cắt về 0.01s), null nếu DNF do quá giờ nhìn.
+// - time: thời gian cuối cùng sau phạt (null = DNF).
+// - plus2: đã cộng 2 giây hay chưa.
+const LS_SOLVES = 'cubetimer.solves.v1';
+const LS_SETTINGS = 'cubetimer.settings.v1';
+
+function validSolve(s) {
+  return s && typeof s.id === 'string' && typeof s.scramble === 'string' &&
+    typeof s.date === 'number' && (s.time === null || typeof s.time === 'number') &&
+    (s.raw === null || s.raw === undefined || typeof s.raw === 'number');
+}
+function loadSolves() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_SOLVES) || '[]');
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(validSolve).map(function (s) {
+      return { id: s.id, raw: (s.raw === undefined ? s.time : s.raw), time: s.time,
+               plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '' };
+    });
+  } catch (e) { return []; }
+}
+function saveSolves() {
+  try { localStorage.setItem(LS_SOLVES, JSON.stringify(solves)); } catch (e) {}
+}
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}');
+    return { inspection: s.inspection !== false, beep: s.beep !== false };
+  } catch (e) { return { inspection: true, beep: true }; }
+}
+function saveSettings() {
+  try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {}
+}
+
+const $ = function (sel) { return document.querySelector(sel); };
+function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+let solves = loadSolves();
+let settings = loadSettings();
+let currentView = 'timer'; // 'timer' | 'history'
+let detailSolveId = null;
+
+// Trạng thái bấm giờ: 'idle' | 'holding' | 'ready' | 'running'
+let phase = 'idle';
+let pressStart = 0;    // performance.now() lúc nhấn xuống
+let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
+let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
+let pendingPlus2 = false;
+let beeped8 = false, beeped12 = false;
+let currentScramble = generateScramble();
+let rafId = null;
+let audioCtx = null;
+
+const HOLD_MS = 300;        // giữ 0.3s để sẵn sàng
+const INSPECT_MS = 15000;   // nhìn trước 15s
+const INSPECT_DNF_MS = 17000; // quá 17s: DNF
+const PLUS2_MS = 2000;
+
+/* =====================================================================
+   PHẦN 3: BẤM GIỜ (máy trạng thái)
+   ===================================================================== */
+
+function startLoop() {
+  if (rafId === null) rafId = requestAnimationFrame(loop);
+}
+function stopLoop() {
+  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+function loop() {
+  if (phase === 'idle') { rafId = null; return; }
+  if (currentView !== 'timer') { cancelHold(); return; }
+  const now = performance.now();
+  if ((phase === 'holding' || phase === 'ready') && settings.inspection) {
+    const elapsed = now - inspectStart;
+    if (elapsed >= INSPECT_DNF_MS) { recordInspectionDnf(); return; }
+    if (elapsed >= 8000 && !beeped8) { beeped8 = true; beep(); }
+    if (elapsed >= 12000 && !beeped12) { beeped12 = true; beep(); }
+    if (elapsed >= INSPECT_MS) pendingPlus2 = true;
+  }
+  if (phase === 'holding' && now - pressStart >= HOLD_MS) phase = 'ready';
+  updateClock();
+  rafId = requestAnimationFrame(loop);
+}
+
+// Nhấn xuống: đang chạy thì dừng; đang nghỉ thì bắt đầu nhìn trước (hoặc giữ để sẵn sàng).
+function pressDown() {
+  if (currentView !== 'timer' || modalOpen() || inputFocused()) return;
+  if (phase === 'running') { stopSolve(); return; }
+  if (phase !== 'idle') return;
+  pressStart = performance.now();
+  inspectStart = pressStart;
+  beeped8 = false; beeped12 = false;
+  pendingPlus2 = false;
+  phase = 'holding';
+  setStatus('');
+  startLoop();
+  updateClock();
+}
+
+// Thả ra: giữ đủ 0.3s thì bắt đầu chạy; chạm nhanh thì hủy (chống chạm nhầm).
+function pressUp() {
+  if (phase !== 'holding' && phase !== 'ready') return;
+  if (currentView !== 'timer' || modalOpen()) { cancelHold(); return; }
+  if (performance.now() - pressStart < HOLD_MS) {
+    phase = 'idle';
+    stopLoop();
+    renderTimer();
+    return;
+  }
+  startSolve();
+}
+
+// Bị ngắt giữa chừng (ví dụ cuộc gọi đến): hủy lượt giữ.
+function cancelHold() {
+  if (phase !== 'holding' && phase !== 'ready') return;
+  phase = 'idle';
+  stopLoop();
+  renderTimer();
+}
+
+function startSolve() {
+  if (settings.inspection && performance.now() - inspectStart >= INSPECT_MS) {
+    pendingPlus2 = true; // bắt đầu trong khoảng 15-17s: +2
+  }
+  solveStart = performance.now();
+  phase = 'running';
+  document.body.classList.add('running');
+  updateClock();
+}
+
+function stopSolve() {
+  const raw = Math.floor((performance.now() - solveStart) / 10) * 10; // cắt về 0.01s
+  solves.push({
+    id: makeId(), raw: raw, time: raw + (pendingPlus2 ? PLUS2_MS : 0),
+    plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
+  });
+  saveSolves();
+  currentScramble = generateScramble();
+  phase = 'idle';
+  document.body.classList.remove('running');
+  stopLoop();
+  renderTimer();
+}
+
+// Quá 17s nhìn trước: ghi luôn 1 lượt DNF, đổi scramble mới.
+function recordInspectionDnf() {
+  solves.push({
+    id: makeId(), raw: null, time: null, plus2: false,
+    scramble: currentScramble, date: Date.now(), note: '',
+  });
+  saveSolves();
+  currentScramble = generateScramble();
+  phase = 'idle';
+  stopLoop();
+  setStatus('DNF - quá 17s nhìn trước');
+  renderTimer();
+}
+
+// Âm báo ngắn (WebAudio). AudioContext chỉ mở được sau một thao tác của người dùng.
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep() {
+  if (!settings.beep || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = 880;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
+
+/* =====================================================================
+   PHẦN 4: HIỂN THỊ MÀN HÌNH TIMER
+   ===================================================================== */
+
+function setStatus(text) { $('#status').textContent = text; }
+function setHint(text) { $('#hint').textContent = text; }
+
+// Vẽ đồng hồ theo trạng thái hiện tại. Gọi liên tục trong vòng lặp rAF.
+function updateClock() {
+  const clock = $('#clock');
+  if (phase === 'running') {
+    clock.textContent = fmt(performance.now() - solveStart);
+    clock.className = 'clock';
+    setHint('Chạm để dừng');
+    return;
+  }
+  if (phase === 'holding' || phase === 'ready') {
+    if (settings.inspection) {
+      const elapsed = performance.now() - inspectStart;
+      const remain = INSPECT_MS - elapsed;
+      if (remain <= 0) {
+        clock.textContent = '+2';
+        clock.className = 'clock warn-red';
+        setHint('Đang +2 - thả ra để bắt đầu');
+      } else {
+        clock.textContent = String(Math.ceil(remain / 1000));
+        if (elapsed >= 12000) clock.className = 'clock warn-red';
+        else if (elapsed >= 8000) clock.className = 'clock warn-yellow';
+        else clock.className = 'clock';
+        setHint(phase === 'ready' ? 'Thả ra để bắt đầu' : 'Đang nhìn trước...');
+      }
+    } else {
+      clock.textContent = '0:00.00';
+      clock.className = phase === 'ready' ? 'clock ready' : 'clock hold';
+      setHint(phase === 'ready' ? 'Thả ra để bắt đầu' : 'Giữ 0.3s để sẵn sàng');
+    }
+    return;
+  }
+  // idle: hiện lượt vừa giải (hoặc 0:00.00 nếu chưa có lượt nào)
+  const last = solves[solves.length - 1];
+  clock.textContent = last ? fmtSolve(last) : '0:00.00';
+  clock.className = 'clock';
+  setHint(solves.length ? 'Nhấn giữ để bắt đầu lượt mới' : 'Nhấn giữ Space hoặc chạm giữ màn hình để bắt đầu');
+}
+
+// Bảng thống kê Ao3/5/15/50/100: cột Hiện tại và Tốt nhất.
+function statsTableHTML() {
+  const ns = [3, 5, 15, 50, 100];
+  let rows = '';
+  for (const n of ns) {
+    rows += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(solves, n)) +
+      '</td><td class="num">' + fmtAverageResult(bestAverageOf(solves, n)) + '</td></tr>';
+  }
+  const best = bestSingle(solves);
+  return '<h3>Thống kê</h3><table>' +
+    '<tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>' + rows +
+    '<tr class="total"><td>Tốt nhất</td><td class="num" colspan="2">' + (best === null ? '-' : fmt(best)) + '</td></tr>' +
+    '<tr><td>Lượt giải</td><td class="num" colspan="2">' + solves.length + '</td></tr>' +
+    '</table>';
+}
+
+function renderTimer() {
+  $('#scramble').textContent = currentScramble;
+  $('#stats').innerHTML = statsTableHTML();
+  const last = solves[solves.length - 1];
+  $('#btn-plus2').disabled = !last || last.time === null;
+  $('#btn-dnf').disabled = !last || (last.time === null && last.raw === null);
+  $('#btn-del-last').disabled = !last;
+  updateClock();
+}
+
+// +2 / DNF cho lượt vừa giải (nút trên màn hình Timer).
+function togglePlus2(solve) {
+  if (!solve || solve.time === null || solve.raw === null) return;
+  solve.plus2 = !solve.plus2;
+  solve.time = solve.raw + (solve.plus2 ? PLUS2_MS : 0);
+  saveSolves();
+}
+function toggleDnf(solve) {
+  if (!solve) return;
+  if (solve.time !== null) {
+    solve.time = null;
+  } else if (solve.raw !== null) {
+    solve.time = solve.raw + (solve.plus2 ? PLUS2_MS : 0);
+  }
+  saveSolves();
+}
+
+/* =====================================================================
+   PHẦN 5: TRANG LỊCH SỬ, BIỂU ĐỒ, MODAL, XUẤT/NHẬP
+   ===================================================================== */
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function modalOpen() {
+  return !$('#detail-modal').classList.contains('hidden') ||
+    !$('#settings-modal').classList.contains('hidden');
+}
+function inputFocused() {
+  const el = document.activeElement;
+  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
+}
+
+function showHistory() {
+  cancelHold();
+  currentView = 'history';
+  $('#timer-view').classList.add('hidden');
+  $('#history-view').classList.remove('hidden');
+  renderHistory();
+  drawChart();
+}
+function showTimer() {
+  currentView = 'timer';
+  $('#history-view').classList.add('hidden');
+  $('#timer-view').classList.remove('hidden');
+  renderTimer();
+}
+
+function renderHistory() {
+  const best = bestSingle(solves);
+  const mean = meanOf(solves);
+  let table = '<table><tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>';
+  for (const n of [3, 5, 15, 50, 100]) {
+    table += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(solves, n)) +
+      '</td><td class="num">' + fmtAverageResult(bestAverageOf(solves, n)) + '</td></tr>';
+  }
+  table += '</table>';
+  $('#history-summary').innerHTML =
+    '<div class="sum-line"><span>Lượt giải: <b>' + solves.length + '</b></span>' +
+    '<span>Tốt nhất: <b>' + (best === null ? '-' : fmt(best)) + '</b></span>' +
+    '<span>Mean: <b>' + (mean === null ? '-' : fmtAvg(mean)) + '</b></span></div>' + table;
+
+  const list = $('#history-list');
+  if (solves.length === 0) {
+    list.innerHTML = '<div class="empty-msg">Chưa có lượt giải nào.</div>';
+    return;
+  }
+  let html = '';
+  for (let i = solves.length - 1; i >= 0; i--) {
+    const s = solves[i];
+    const upTo = solves.slice(0, i + 1);
+    const ao5 = fmtAverageResult(averageOf(upTo, 5));
+    const ao12 = fmtAverageResult(averageOf(upTo, 12));
+    const d = new Date(s.date);
+    const dateStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') +
+      ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    html += '<div class="solve-row" data-id="' + s.id + '">' +
+      '<span class="idx">#' + (i + 1) + '</span>' +
+      '<span class="time' + (s.time === null ? ' dnf' : '') + '">' + escapeHtml(fmtSolve(s)) + '</span>' +
+      '<span class="scr">' + escapeHtml(s.scramble) + '</span>' +
+      '<span class="ao">Ao5 ' + ao5 + ' · Ao12 ' + ao12 + '</span>' +
+      '<span class="date">' + dateStr + (s.note ? ' &#9998;' : '') + '</span>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+}
+
+// Biểu đồ đường thời gian theo từng lượt (canvas thuần, không thư viện).
+function drawChart() {
+  const canvas = $('#chart');
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth;
+  const height = 180;
+  canvas.width = Math.max(1, Math.round(width * dpr));
+  canvas.height = Math.round(height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  const valid = solves.filter(function (s) { return s.time !== null; }).map(function (s) { return s.time; });
+  if (valid.length < 2) {
+    ctx.fillStyle = '#888';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Cần ít nhất 2 lượt giải để vẽ biểu đồ', width / 2, height / 2);
+    return;
+  }
+  let min = Math.min.apply(null, valid), max = Math.max.apply(null, valid);
+  if (min === max) { min -= 1000; max += 1000; }
+  const padL = 58, padR = 12, padT = 12, padB = 22;
+  const plotW = width - padL - padR, plotH = height - padT - padB;
+  const xAt = function (i) { return padL + (solves.length <= 1 ? 0 : (i / (solves.length - 1)) * plotW); };
+  const yAt = function (t) { return padT + (1 - (t - min) / (max - min)) * plotH; };
+  // Lưới ngang + nhãn thời gian.
+  ctx.strokeStyle = '#333';
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  for (let g = 0; g <= 4; g++) {
+    const v = min + (max - min) * g / 4;
+    const gy = yAt(v);
+    ctx.beginPath();
+    ctx.moveTo(padL, gy);
+    ctx.lineTo(width - padR, gy);
+    ctx.stroke();
+    ctx.fillText(fmt(v), padL - 6, gy + 4);
+  }
+  // Đường thời gian, đứt đoạn ở DNF.
+  ctx.strokeStyle = '#4caf50';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let penDown = false;
+  solves.forEach(function (s, i) {
+    if (s.time === null) { penDown = false; return; }
+    if (!penDown) { ctx.moveTo(xAt(i), yAt(s.time)); penDown = true; }
+    else ctx.lineTo(xAt(i), yAt(s.time));
+  });
+  ctx.stroke();
+  // Chấm từng lượt.
+  ctx.fillStyle = '#fff';
+  solves.forEach(function (s, i) {
+    if (s.time === null) return;
+    ctx.beginPath();
+    ctx.arc(xAt(i), yAt(s.time), 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // Nhãn trục X.
+  ctx.fillStyle = '#888';
+  ctx.textAlign = 'left';
+  ctx.fillText('#1', padL, height - 6);
+  ctx.textAlign = 'right';
+  ctx.fillText('#' + solves.length, width - padR, height - 6);
+}
+
+// --- Modal chi tiết lượt giải ---
+function openDetail(id) {
+  const idx = solves.findIndex(function (s) { return s.id === id; });
+  if (idx === -1) return;
+  detailSolveId = id;
+  const s = solves[idx];
+  const upTo = solves.slice(0, idx + 1);
+  $('#detail-title').textContent = 'Lượt #' + (idx + 1);
+  $('#detail-body').innerHTML =
+    '<div class="detail-line">Thời gian: <b>' + escapeHtml(fmtSolve(s)) + '</b></div>' +
+    '<div class="detail-line">Scramble: ' + escapeHtml(s.scramble) + '</div>' +
+    '<div class="detail-line">Ngày giờ: ' + new Date(s.date).toLocaleString('vi-VN') + '</div>' +
+    '<div class="detail-line">Ao5 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 5)) +
+    '</b> · Ao12 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 12)) + '</b></div>';
+  $('#detail-note').value = s.note || '';
+  $('#detail-plus2').disabled = s.time === null;
+  $('#detail-dnf').disabled = s.time === null && s.raw === null;
+  $('#detail-modal').classList.remove('hidden');
+}
+function closeDetail() {
+  $('#detail-modal').classList.add('hidden');
+  detailSolveId = null;
+}
+function openSettings() {
+  $('#set-inspection').checked = settings.inspection;
+  $('#set-beep').checked = settings.beep;
+  $('#settings-modal').classList.remove('hidden');
+}
+function closeSettings() {
+  $('#settings-modal').classList.add('hidden');
+}
+
+// --- Xuất / Nhập dữ liệu ---
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+function exportJSON() {
+  downloadBlob(JSON.stringify(solves, null, 2), 'cube-timer.json', 'application/json');
+}
+function exportCSV() {
+  const q = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
+  let csv = '\uFEFFSTT,Thời gian (giây),Scramble,Ngày giờ,Ghi chú\n';
+  solves.forEach(function (s, i) {
+    csv += (i + 1) + ',' + (s.time === null ? 'DNF' : (s.time / 1000).toFixed(2) + (s.plus2 ? '+' : '')) +
+      ',' + q(s.scramble) + ',' + q(new Date(s.date).toLocaleString('vi-VN')) + ',' + q(s.note || '') + '\n';
+  });
+  downloadBlob(csv, 'cube-timer.csv', 'text/csv;charset=utf-8');
+}
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const arr = JSON.parse(reader.result);
+      if (!Array.isArray(arr)) throw new Error('not array');
+      const existing = new Set(solves.map(function (s) { return s.id; }));
+      let added = 0;
+      for (const s of arr) {
+        if (!validSolve(s) || existing.has(s.id)) continue;
+        solves.push({ id: s.id, raw: (s.raw === undefined ? s.time : s.raw), time: s.time,
+          plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '' });
+        existing.add(s.id);
+        added++;
+      }
+      solves.sort(function (a, b) { return a.date - b.date; });
+      saveSolves();
+      renderHistory();
+      renderTimer();
+      alert('Đã nhập ' + added + ' lượt giải mới.');
+    } catch (e) {
+      alert('File JSON không hợp lệ.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =====================================================================
+   PHẦN 6: SỰ KIỆN VÀ KHỞI ĐỘNG
+   ===================================================================== */
+
+const zone = $('#timer-zone');
+zone.addEventListener('pointerdown', function (e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  ensureAudio();
+  pressDown();
+});
+zone.addEventListener('pointerup', function (e) { e.preventDefault(); pressUp(); });
+zone.addEventListener('pointercancel', cancelHold);
+zone.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+window.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') { closeDetail(); closeSettings(); return; }
+  if (inputFocused() || modalOpen()) return;
+  if (currentView !== 'timer') return;
+  if (e.repeat) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    ensureAudio();
+    pressDown();
+  } else if (phase === 'running' && !e.metaKey && !e.ctrlKey && !e.altKey &&
+    e.code !== 'ShiftLeft' && e.code !== 'ShiftRight' &&
+    e.code !== 'ControlLeft' && e.code !== 'ControlRight' &&
+    e.code !== 'AltLeft' && e.code !== 'AltRight' &&
+    e.code !== 'MetaLeft' && e.code !== 'MetaRight' && e.code !== 'CapsLock') {
+    stopSolve(); // phím bất kỳ để dừng
+  }
+});
+window.addEventListener('keyup', function (e) {
+  if (e.code === 'Space') { e.preventDefault(); pressUp(); }
+});
+
+// Nhả focus khỏi nút sau khi bấm để Space không bấm lại nút đó.
+document.addEventListener('click', function (e) {
+  if (e.target && e.target.tagName === 'BUTTON') e.target.blur();
+});
+
+$('#btn-new-scramble').addEventListener('click', function () {
+  if (phase !== 'idle') return;
+  currentScramble = generateScramble();
+  setStatus('');
+  renderTimer();
+});
+$('#btn-plus2').addEventListener('click', function () {
+  togglePlus2(solves[solves.length - 1]);
+  renderTimer();
+});
+$('#btn-dnf').addEventListener('click', function () {
+  toggleDnf(solves[solves.length - 1]);
+  renderTimer();
+});
+$('#btn-del-last').addEventListener('click', function () {
+  if (!solves.length) return;
+  solves.pop();
+  saveSolves();
+  renderTimer();
+});
+$('#btn-history').addEventListener('click', showHistory);
+$('#btn-back').addEventListener('click', showTimer);
+$('#btn-settings').addEventListener('click', openSettings);
+$('#settings-close').addEventListener('click', closeSettings);
+$('#set-inspection').addEventListener('change', function (e) {
+  settings.inspection = e.target.checked;
+  saveSettings();
+});
+$('#set-beep').addEventListener('change', function (e) {
+  settings.beep = e.target.checked;
+  saveSettings();
+});
+$('#btn-export-json').addEventListener('click', exportJSON);
+$('#btn-export-csv').addEventListener('click', exportCSV);
+$('#btn-import').addEventListener('click', function () { $('#file-import').click(); });
+$('#file-import').addEventListener('change', function (e) {
+  if (e.target.files.length) importJSON(e.target.files[0]);
+  e.target.value = '';
+});
+$('#btn-clear-all').addEventListener('click', function () {
+  if (!solves.length) return;
+  if (confirm('Xóa toàn bộ ' + solves.length + ' lượt giải?')) {
+    solves = [];
+    saveSolves();
+    renderHistory();
+    renderTimer();
+  }
+});
+$('#history-list').addEventListener('click', function (e) {
+  const row = e.target.closest('.solve-row');
+  if (row) openDetail(row.dataset.id);
+});
+$('#detail-close').addEventListener('click', closeDetail);
+$('#detail-save').addEventListener('click', function () {
+  const s = solves.find(function (x) { return x.id === detailSolveId; });
+  if (s) { s.note = $('#detail-note').value; saveSolves(); }
+  closeDetail();
+  renderHistory();
+});
+$('#detail-plus2').addEventListener('click', function () {
+  const s = solves.find(function (x) { return x.id === detailSolveId; });
+  togglePlus2(s);
+  openDetail(detailSolveId);
+  renderHistory();
+  renderTimer();
+});
+$('#detail-dnf').addEventListener('click', function () {
+  const s = solves.find(function (x) { return x.id === detailSolveId; });
+  toggleDnf(s);
+  openDetail(detailSolveId);
+  renderHistory();
+  renderTimer();
+});
+$('#detail-delete').addEventListener('click', function () {
+  if (!confirm('Xóa lượt giải này?')) return;
+  solves = solves.filter(function (x) { return x.id !== detailSolveId; });
+  saveSolves();
+  closeDetail();
+  renderHistory();
+  renderTimer();
+});
+document.querySelectorAll('.modal').forEach(function (m) {
+  m.addEventListener('click', function (e) {
+    if (e.target === m) { closeDetail(); closeSettings(); }
+  });
+});
+window.addEventListener('resize', function () {
+  if (currentView === 'history') drawChart();
+});
+
+// Khởi động.
+$('#set-inspection').checked = settings.inspection;
+$('#set-beep').checked = settings.beep;
+renderTimer();
+</script>
+</body>
+</html>

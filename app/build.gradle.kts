@@ -29,25 +29,3 @@ android {
         jvmTarget = "17"
     }
 }
-
-// Giải mã icon launcher từ icon.json (base64) thành PNG trước khi build.
-// (File nhị phân không đẩy qua GitHub connector được nên phải nhúng base64.)
-// Đường dẫn được tính lúc cấu hình, trong doLast không chạm tới project,
-// để tương thích configuration cache.
-val iconJsonFile = rootProject.file("icon.json")
-val iconOutDir = file("src/main/res/mipmap-xxxhdpi")
-tasks.register("generateLauncherIcon") {
-    doLast {
-        val text = iconJsonFile.readText()
-        val b64 = Regex("\"icon\"\\s*:\\s*\"([^\"]+)\"").find(text)?.groupValues?.get(1)
-            ?: error("icon.json khong co truong icon")
-        iconOutDir.mkdirs()
-        java.nio.file.Files.write(
-            iconOutDir.resolve("ic_launcher.png").toPath(),
-            java.util.Base64.getDecoder().decode(b64)
-        )
-    }
-}
-afterEvaluate {
-    tasks.named("preBuild") { dependsOn("generateLauncherIcon") }
-}

@@ -124,6 +124,18 @@
     .solve-row .time { font-size: 19px; }
     .stats-row { padding: 10px 16px 6px; }
   }
+
+  /* Xoay ngang màn hình hẹp (điện thoại/tablet để ngang): thu nhỏ đồng hồ
+     theo chiều cao để không tràn, nới các khoảng đệm. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .clock { font-size: clamp(56px, 22dvh, 120px); }
+    .scramble-wrap { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+    .scramble { font-size: clamp(16px, 2.6vw, 22px); min-height: 0; }
+    #timer-zone { min-height: 0; }
+    .action-row { padding: 4px 0 2px; gap: 20px; }
+    .stats-row { padding: 6px 20px 4px; }
+    #timer-view { padding-bottom: 64px; }
+  }
 </style>
 </head>
 <body>
@@ -382,11 +394,13 @@ let currentView = 'timer'; // 'timer' | 'history'
 let detailSolveId = null;
 
 // Trạng thái bấm giờ: 'idle' | 'inspecting' | 'running'
-// Luồng chạm: 1 lần = inspection 15s, chạm tiếp = bắt đầu giải,
-// chạm = dừng, chạm 2 lần liên tiếp = hoàn tác lượt vừa giải.
+// Luồng chạm: nhả tay = inspection 15s, nhả tiếp = bắt đầu giải, nhả = dừng.
 let phase = 'idle';
 let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
 let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
+// id lượt vừa ghi xong, còn sửa được bằng nút ở màn Timer; bắt đầu lượt mới
+// thì khóa (null) — hủy lượt mới cũng không mở khóa lại, chỉ sửa được trong Lịch sử.
+let editableSolveId = null;
 let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
 let currentScramble = generateScramble();
@@ -442,6 +456,7 @@ function handleTap() {
 
 function startInspectionOrSolve() {
   if (phase !== 'idle' || currentView !== 'timer') return;
+  editableSolveId = null; // bắt đầu lượt mới: khóa lượt trước (kể cả khi hủy lượt này sau đó)
   hideRecordBox();
   setStatus('');
   if (settings.inspection) {
@@ -487,6 +502,7 @@ function stopSolve() {
   phase = 'idle';
   document.body.classList.remove('running');
   stopLoop();
+  editableSolveId = solves[solves.length - 1].id; // lượt vừa ghi xong, còn sửa được
   renderTimer();
   if (record) showRecordBox(record);
 }
@@ -575,6 +591,7 @@ function recordInspectionDnf() {
   currentScramble = generateScramble();
   phase = 'idle';
   stopLoop();
+  editableSolveId = solves[solves.length - 1].id; // lượt DNF vừa ghi, còn sửa được
   setStatus('DNF - quá 17s nhìn trước');
   renderTimer();
 }
@@ -652,12 +669,12 @@ function renderTimer() {
   $('#scramble').textContent = currentScramble;
   $('#stats-row').innerHTML = statsRowHTML();
   const last = solves[solves.length - 1];
-  // Đã bắt đầu lượt tiếp theo (đang nhìn trước/chạy giờ) thì khóa các nút sửa
-  // lượt trước — muốn sửa/xóa phải vô Lịch sử.
-  const locked = phase !== 'idle';
-  $('#btn-plus2').disabled = locked || !last || last.time === null;
-  $('#btn-dnf').disabled = locked || !last || (last.time === null && last.raw === null);
-  $('#btn-del-last').disabled = locked || !last;
+  // Chỉ sửa được lượt vừa ghi xong và chưa bắt đầu lượt mới (so bằng id nên
+  // hủy nhìn trước cũng không mở khóa lại).
+  const editable = !!last && last.id === editableSolveId;
+  $('#btn-plus2').disabled = !editable || last.time === null;
+  $('#btn-dnf').disabled = !editable || (last.time === null && last.raw === null);
+  $('#btn-del-last').disabled = !editable;
   updateClock();
 }
 
@@ -975,7 +992,10 @@ $('#btn-dnf').addEventListener('click', function () {
 });
 $('#btn-del-last').addEventListener('click', function () {
   if (!solves.length) return;
+  const last = solves[solves.length - 1];
+  if (!confirm('Xóa lượt vừa giải ' + fmtSolve(last) + '?')) return;
   solves.pop();
+  editableSolveId = null; // lượt còn lại là lượt cũ, đã khóa
   saveSolves();
   renderTimer();
 });
@@ -1001,6 +1021,7 @@ $('#btn-clear-all').addEventListener('click', function () {
   if (!solves.length) return;
   if (confirm('Xóa toàn bộ ' + solves.length + ' lượt giải?')) {
     solves = [];
+    editableSolveId = null;
     saveSolves();
     renderHistory();
     renderTimer();
@@ -1033,6 +1054,7 @@ $('#detail-dnf').addEventListener('click', function () {
 });
 $('#detail-delete').addEventListener('click', function () {
   if (!confirm('Xóa lượt giải này?')) return;
+  if (detailSolveId === editableSolveId) editableSolveId = null;
   solves = solves.filter(function (x) { return x.id !== detailSolveId; });
   saveSolves();
   closeDetail();

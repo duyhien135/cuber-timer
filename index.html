@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cube Timer</title>
+<title>tdung cuti</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='37' y='8' width='26' height='26' rx='4' fill='%23d50000'/%3E%3Crect x='66' y='8' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='8' y='37' width='26' height='26' rx='4' fill='%2300a651'/%3E%3Crect x='37' y='37' width='26' height='26' rx='4' fill='%23ffd500'/%3E%3Crect x='66' y='37' width='26' height='26' rx='4' fill='%23ff6d00'/%3E%3Crect x='8' y='66' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='37' y='66' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='66' y='66' width='26' height='26' rx='4' fill='%2300a651'/%3E%3C/svg%3E">
 <style>
   * { box-sizing: border-box; }
@@ -25,7 +25,7 @@
   button.primary { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 
   /* ---- Màn hình Timer ---- */
-  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; }
+  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 2px; }
   .topbar h1 { margin: 0; font-size: 22px; font-weight: 700; text-align: center; }
   .topbar .sub { font-size: 13px; color: #999; text-align: center; }
@@ -197,7 +197,7 @@
     <h3>Cài đặt</h3>
     <label class="check"><input type="checkbox" id="set-inspection" checked> Inspection 15 giây (chuẩn WCA)</label>
     <label class="check"><input type="checkbox" id="set-beep" checked> Âm báo ở giây thứ 8 và 12 khi nhìn trước</label>
-    <p class="note">Chạm 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp: hoàn tác lượt vừa giải và về scramble đó.</p>
+    <p class="note">Chạm hoặc nhấn giữ 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp thật nhanh: hoàn tác lượt vừa giải và về scramble đó.</p>
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
     </div>
@@ -396,7 +396,6 @@ let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
 let currentScramble = generateScramble();
 let rafId = null;
-let tapTimer = null;   // hẹn giờ phân biệt chạm 1 lần với chạm 2 lần
 let audioCtx = null;
 
 const TAP_WINDOW_MS = 300;  // 2 lần chạm trong 300ms = chạm đúp (hoàn tác)
@@ -430,20 +429,35 @@ function loop() {
   rafId = requestAnimationFrame(loop);
 }
 
-// Chạm (hoặc Space): đang chạy thì dừng; đang nhìn trước thì bắt đầu giải;
-// đang nghỉ thì chờ 300ms để phân biệt chạm 1 lần (bắt đầu) với chạm đúp (hoàn tác).
+// Chạm (hoặc Space): nhận ngay khi vừa chạm xuống, không chờ.
+// - Đang chạy: dừng. Chạm đúp ngay sau khi bắt đầu giải (< 300ms) = hoàn tác.
+// - Đang nhìn trước: bắt đầu giải. Chạm đúp ngay sau khi bắt đầu nhìn (< 300ms) = hoàn tác.
+// - Đang nghỉ: bắt đầu inspection (hoặc giải luôn nếu tắt inspection).
 function handleTap() {
   if (currentView !== 'timer' || modalOpen() || inputFocused()) return;
   ensureAudio();
-  if (phase === 'running') { stopSolve(); return; }
-  if (phase === 'inspecting') { startSolve(); return; }
-  if (tapTimer) {
-    clearTimeout(tapTimer); tapTimer = null;
-    if (solves.length) undoLastSolve();
-    else startInspectionOrSolve();
+  if (phase === 'running') {
+    if (solves.length && performance.now() - solveStart < TAP_WINDOW_MS) {
+      phase = 'idle';
+      document.body.classList.remove('running');
+      stopLoop();
+      undoLastSolve();
+      return;
+    }
+    stopSolve();
     return;
   }
-  tapTimer = setTimeout(function () { tapTimer = null; startInspectionOrSolve(); }, TAP_WINDOW_MS);
+  if (phase === 'inspecting') {
+    if (solves.length && performance.now() - inspectStart < TAP_WINDOW_MS) {
+      phase = 'idle';
+      stopLoop();
+      undoLastSolve();
+      return;
+    }
+    startSolve();
+    return;
+  }
+  startInspectionOrSolve();
 }
 
 function startInspectionOrSolve() {
@@ -651,7 +665,6 @@ function setNav(view) {
 }
 
 function showHistory() {
-  if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
   cancelTiming();
   currentView = 'history';
   $('#timer-view').classList.add('hidden');
@@ -860,12 +873,14 @@ function importJSON(file) {
    PHẦN 6: SỰ KIỆN VÀ KHỞI ĐỘNG
    ===================================================================== */
 
-// Chạm vào màn hình Timer (trừ nút bấm, ô nhập): xử lý theo luồng chạm.
-$('#timer-view').addEventListener('click', function (e) {
+// Chạm vào màn hình Timer (trừ nút bấm, ô nhập): nhận ngay khi vừa chạm xuống
+// (pointerdown) nên nhấn nhanh hay nhấn giữ đều có tác dụng như nhau.
+$('#timer-view').addEventListener('pointerdown', function (e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
   if (e.target.closest('button, a, input, select, textarea, label')) return;
   handleTap();
 });
-$('#timer-zone').addEventListener('contextmenu', function (e) { e.preventDefault(); });
+$('#timer-view').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
 window.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') { closeDetail(); closeSettings(); return; }

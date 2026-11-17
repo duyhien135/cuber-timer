@@ -55,11 +55,6 @@
   .record-box.best .rb-title { color: #2e7d32; }
   .record-box.worst { background: #fdecea; }
   .record-box.worst .rb-title { color: #c62828; }
-  .action-row { display: flex; gap: 28px; justify-content: center; padding: 10px 0 6px; }
-  .action-row button { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 22px; color: #555; padding: 6px 10px; }
-  .action-row button small { font-size: 12px; color: #999; }
-  .action-row button:hover { background: #f5f5f5; }
-  .action-row button:disabled { opacity: 0.3; }
   .stats-row { display: flex; justify-content: flex-end; gap: 16px; padding: 12px 20px 8px; font-size: 14px; }
   .ao-col table { border-collapse: collapse; font-size: 14px; }
   .ao-col td { padding: 2px 2px 2px 10px; }
@@ -132,7 +127,6 @@
     .scramble-wrap { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
     .scramble { font-size: clamp(16px, 2.6vw, 22px); min-height: 0; }
     #timer-zone { min-height: 0; }
-    .action-row { padding: 4px 0 2px; gap: 20px; }
     .stats-row { padding: 6px 20px 4px; }
     #timer-view { padding-bottom: 64px; }
   }
@@ -147,11 +141,6 @@
   <div id="timer-zone">
     <div id="clock" class="clock">0:00.00</div>
     <div id="status" class="status"></div>
-  </div>
-  <div class="action-row hide-while-running">
-    <button id="btn-plus2" title="Cộng/trừ 2 giây cho lượt vừa giải">⚑<small>+2</small></button>
-    <button id="btn-dnf" title="Đánh dấu/bỏ DNF cho lượt vừa giải">⊘<small>DNF</small></button>
-    <button id="btn-del-last" title="Xóa lượt vừa giải">✕<small>Xóa</small></button>
   </div>
   <section id="stats-row" class="stats-row hide-while-running"></section>
 </div>
@@ -398,9 +387,6 @@ let detailSolveId = null;
 let phase = 'idle';
 let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
 let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
-// id lượt vừa ghi xong, còn sửa được bằng nút ở màn Timer; bắt đầu lượt mới
-// thì khóa (null) — hủy lượt mới cũng không mở khóa lại, chỉ sửa được trong Lịch sử.
-let editableSolveId = null;
 let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
 let currentScramble = generateScramble();
@@ -456,7 +442,6 @@ function handleTap() {
 
 function startInspectionOrSolve() {
   if (phase !== 'idle' || currentView !== 'timer') return;
-  editableSolveId = null; // bắt đầu lượt mới: khóa lượt trước (kể cả khi hủy lượt này sau đó)
   hideRecordBox();
   setStatus('');
   if (settings.inspection) {
@@ -502,7 +487,6 @@ function stopSolve() {
   phase = 'idle';
   document.body.classList.remove('running');
   stopLoop();
-  editableSolveId = solves[solves.length - 1].id; // lượt vừa ghi xong, còn sửa được
   renderTimer();
   if (record) showRecordBox(record);
 }
@@ -591,7 +575,6 @@ function recordInspectionDnf() {
   currentScramble = generateScramble();
   phase = 'idle';
   stopLoop();
-  editableSolveId = solves[solves.length - 1].id; // lượt DNF vừa ghi, còn sửa được
   setStatus('DNF - quá 17s nhìn trước');
   renderTimer();
 }
@@ -636,7 +619,9 @@ function updateClock() {
     const elapsed = performance.now() - inspectStart;
     const remain = INSPECT_MS - elapsed;
     if (remain <= 0) {
-      clock.textContent = '+2';
+      // Quá 15s: hiện -1 (giây 16), -2 (giây 17); trong khoảng này bắt đầu
+      // bấm giờ thì +2, hết -2 mà chưa bấm thì tự DNF.
+      clock.textContent = String(Math.floor(remain / 1000));
       clock.className = 'clock warn-red';
     } else {
       clock.textContent = String(Math.ceil(remain / 1000));
@@ -668,17 +653,10 @@ function statsRowHTML() {
 function renderTimer() {
   $('#scramble').textContent = currentScramble;
   $('#stats-row').innerHTML = statsRowHTML();
-  const last = solves[solves.length - 1];
-  // Chỉ sửa được lượt vừa ghi xong và chưa bắt đầu lượt mới (so bằng id nên
-  // hủy nhìn trước cũng không mở khóa lại).
-  const editable = !!last && last.id === editableSolveId;
-  $('#btn-plus2').disabled = !editable || last.time === null;
-  $('#btn-dnf').disabled = !editable || (last.time === null && last.raw === null);
-  $('#btn-del-last').disabled = !editable;
   updateClock();
 }
 
-// +2 / DNF cho lượt vừa giải (nút trên màn hình Timer).
+// +2 / DNF cho một lượt giải (dùng trong chi tiết Lịch sử).
 function togglePlus2(solve) {
   if (!solve || solve.time === null || solve.raw === null) return;
   solve.plus2 = !solve.plus2;
@@ -927,12 +905,7 @@ document.addEventListener('pointerup', function (e) {
   // hay chạm trúng nút (lúc chạy các nút đã ẩn, nhưng tay đập mạnh hay trượt).
   if (phase === 'running') { handleTap(); return; }
   if (e.target.closest('button, a, input, select, textarea, label')) return;
-  if (performance.now() - lastSwipeAt < 300) return; // vừa lướt xong
-  if (swipeX !== null && e.pointerType === 'touch') {
-    const dx = e.clientX - swipeX;
-    const dy = e.clientY - swipeY;
-    if (Math.abs(dx) >= 60 && Math.abs(dx) >= Math.abs(dy) * 1.5) return; // đang lướt
-  }
+  if (performance.now() - lastSwipeAt < 150) return; // vừa lướt xong
   handleTap();
 });
 $('#timer-view').addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -982,23 +955,6 @@ document.addEventListener('click', function (e) {
   if (e.target && e.target.tagName === 'BUTTON') e.target.blur();
 });
 
-$('#btn-plus2').addEventListener('click', function () {
-  togglePlus2(solves[solves.length - 1]);
-  renderTimer();
-});
-$('#btn-dnf').addEventListener('click', function () {
-  toggleDnf(solves[solves.length - 1]);
-  renderTimer();
-});
-$('#btn-del-last').addEventListener('click', function () {
-  if (!solves.length) return;
-  const last = solves[solves.length - 1];
-  if (!confirm('Xóa lượt vừa giải ' + fmtSolve(last) + '?')) return;
-  solves.pop();
-  editableSolveId = null; // lượt còn lại là lượt cũ, đã khóa
-  saveSolves();
-  renderTimer();
-});
 $('#nav-history').addEventListener('click', showHistory);
 $('#nav-timer').addEventListener('click', showTimer);
 $('#settings-close').addEventListener('click', closeSettings);
@@ -1021,7 +977,6 @@ $('#btn-clear-all').addEventListener('click', function () {
   if (!solves.length) return;
   if (confirm('Xóa toàn bộ ' + solves.length + ' lượt giải?')) {
     solves = [];
-    editableSolveId = null;
     saveSolves();
     renderHistory();
     renderTimer();
@@ -1054,7 +1009,6 @@ $('#detail-dnf').addEventListener('click', function () {
 });
 $('#detail-delete').addEventListener('click', function () {
   if (!confirm('Xóa lượt giải này?')) return;
-  if (detailSolveId === editableSolveId) editableSolveId = null;
   solves = solves.filter(function (x) { return x.id !== detailSolveId; });
   saveSolves();
   closeDetail();

@@ -25,7 +25,7 @@
   button.primary { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 
   /* ---- Màn hình Timer ---- */
-  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   .scramble-wrap { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 0; }
   .scramble {
     text-align: center; font-weight: 700; color: #333;
@@ -34,7 +34,7 @@
   }
   #timer-zone {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    touch-action: none; user-select: none; -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent; cursor: pointer; min-height: 180px;
   }
   .clock {
@@ -909,6 +909,9 @@ function importJSON(file) {
 // khi NHẢ tay ra (pointerup), kiểu stackmat — nhấc tay khỏi mặt bàn thì giờ mới chạy.
 document.addEventListener('pointerup', function (e) {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
+  // Đang chạy giờ: nhả tay ở BẤT CỨ đâu cũng dừng — kể cả khi tay trượt
+  // hay chạm trúng nút (lúc chạy các nút đã ẩn, nhưng tay đập mạnh hay trượt).
+  if (phase === 'running') { handleTap(); return; }
   if (e.target.closest('button, a, input, select, textarea, label')) return;
   if (performance.now() - lastSwipeAt < 300) return; // vừa lướt xong
   if (swipeX !== null && e.pointerType === 'touch') {

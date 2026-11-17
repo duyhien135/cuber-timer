@@ -90,18 +90,20 @@
   #history-summary th { text-align: right; color: #888; font-size: 12px; font-weight: 600; }
   #history-summary th:first-child { text-align: left; }
   #chart { width: 100%; background: #f5f5f5; border-radius: 12px; margin-bottom: 14px; display: block; }
+  #history-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .solve-row {
-    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-    background: #f5f5f5; border-radius: 8px; margin-bottom: 6px; cursor: pointer;
+    position: relative; background: #fff; border: 1px solid #eee; border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 8px 10px 12px; cursor: pointer;
+    min-height: 76px; display: flex; flex-direction: column;
   }
-  .solve-row:hover { background: #eeeeee; }
-  .solve-row .idx { color: #999; width: 42px; flex-shrink: 0; font-size: 14px; }
-  .solve-row .time { font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 18px; width: 110px; flex-shrink: 0; }
+  .solve-row:active { background: #f5f5f5; }
+  .solve-row .date { color: #999; font-size: 12px; text-align: left; }
+  .solve-row .time {
+    font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 21px;
+    text-align: center; flex: 1; display: flex; align-items: center; justify-content: center;
+  }
   .solve-row .time.dnf { color: #d32f2f; }
-  .solve-row .scr { flex: 1; color: #666; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .solve-row .ao { color: #888; font-size: 12px; width: 205px; flex-shrink: 0; text-align: right; font-family: 'SF Mono', Consolas, monospace; }
-  .solve-row .date { color: #888; font-size: 12px; width: 108px; flex-shrink: 0; text-align: right; }
-  .empty-msg { color: #999; text-align: center; padding: 30px 0; }
+  .empty-msg { color: #999; text-align: center; padding: 30px 0; grid-column: 1 / -1; }
 
   /* ---- Modal ---- */
   .modal {
@@ -119,8 +121,7 @@
   .note { color: #888; font-size: 14px; }
 
   @media (max-width: 760px) {
-    .solve-row .ao, .solve-row .date { display: none; }
-    .solve-row .time { width: 92px; font-size: 16px; }
+    .solve-row .time { font-size: 19px; }
     .stats-row { padding: 10px 16px 6px; }
   }
 </style>
@@ -735,18 +736,11 @@ function renderHistory() {
   let html = '';
   for (let i = solves.length - 1; i >= 0; i--) {
     const s = solves[i];
-    const upTo = solves.slice(0, i + 1);
-    const ao5 = fmtAverageResult(averageOf(upTo, 5));
-    const ao12 = fmtAverageResult(averageOf(upTo, 12));
     const d = new Date(s.date);
-    const dateStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') +
-      ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    const dateStr = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
     html += '<div class="solve-row" data-id="' + s.id + '">' +
-      '<span class="idx">#' + (i + 1) + '</span>' +
-      '<span class="time' + (s.time === null ? ' dnf' : '') + '">' + escapeHtml(fmtSolve(s)) + '</span>' +
-      '<span class="scr">' + escapeHtml(s.scramble) + '</span>' +
-      '<span class="ao">Ao5 ' + ao5 + ' · Ao12 ' + ao12 + '</span>' +
       '<span class="date">' + dateStr + (s.note ? ' &#9998;' : '') + '</span>' +
+      '<span class="time' + (s.time === null ? ' dnf' : '') + '">' + escapeHtml(fmtSolve(s)) + '</span>' +
       '</div>';
   }
   list.innerHTML = html;

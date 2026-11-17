@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>tdung cuti</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='37' y='8' width='26' height='26' rx='4' fill='%23d50000'/%3E%3Crect x='66' y='8' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='8' y='37' width='26' height='26' rx='4' fill='%2300a651'/%3E%3Crect x='37' y='37' width='26' height='26' rx='4' fill='%23ffd500'/%3E%3Crect x='66' y='37' width='26' height='26' rx='4' fill='%23ff6d00'/%3E%3Crect x='8' y='66' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='37' y='66' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='66' y='66' width='26' height='26' rx='4' fill='%2300a651'/%3E%3C/svg%3E">
 <style>
@@ -26,9 +26,8 @@
 
   /* ---- Màn hình Timer ---- */
   #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 2px; }
+  .topbar { display: flex; align-items: center; justify-content: center; padding: calc(28px + env(safe-area-inset-top, 0px)) 14px 2px; }
   .topbar h1 { margin: 0; font-size: 22px; font-weight: 700; text-align: center; }
-  .topbar .sub { font-size: 13px; color: #999; text-align: center; }
   .icon-btn { background: none; border: none; font-size: 24px; padding: 6px 10px; color: #333; }
   .icon-btn:hover { background: #f0f0f0; }
   .scramble-wrap { padding: 8px 16px 0; }
@@ -131,9 +130,7 @@
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
   <header class="topbar hide-while-running">
-    <button id="btn-settings" class="icon-btn" title="Cài đặt">⚙️</button>
-    <div><h1>Khối 3×3</h1><div class="sub">20 nước • Chuẩn WCA</div></div>
-    <button id="btn-new-scramble" class="icon-btn" title="Scramble mới">↻</button>
+    <h1>Khối 3×3</h1>
   </header>
   <div class="scramble-wrap hide-while-running"><div id="scramble" class="scramble"></div></div>
   <div id="timer-zone">
@@ -904,12 +901,6 @@ document.addEventListener('click', function (e) {
   if (e.target && e.target.tagName === 'BUTTON') e.target.blur();
 });
 
-$('#btn-new-scramble').addEventListener('click', function () {
-  if (phase !== 'idle') return;
-  currentScramble = generateScramble();
-  setStatus('');
-  renderTimer();
-});
 $('#btn-plus2').addEventListener('click', function () {
   togglePlus2(solves[solves.length - 1]);
   renderTimer();
@@ -926,7 +917,6 @@ $('#btn-del-last').addEventListener('click', function () {
 });
 $('#nav-history').addEventListener('click', showHistory);
 $('#nav-timer').addEventListener('click', showTimer);
-$('#btn-settings').addEventListener('click', openSettings);
 $('#settings-close').addEventListener('click', closeSettings);
 $('#set-inspection').addEventListener('change', function (e) {
   settings.inspection = e.target.checked;

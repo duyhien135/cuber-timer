@@ -73,25 +73,28 @@
 
   /* ---- Trang Lịch sử ---- */
   #history-view { padding: 16px 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; }
-  .history-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .history-head h2 { margin: 0; flex: 1; font-size: 22px; }
-  .history-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  #history-summary { background: #f5f5f5; border-radius: 12px; padding: 14px; margin: 14px 0; }
-  #history-summary .sum-line { display: flex; gap: 24px; flex-wrap: wrap; font-size: 15px; margin-bottom: 10px; }
-  #history-summary .sum-line b { font-family: 'SF Mono', Consolas, monospace; }
-  #history-summary table { width: 100%; border-collapse: collapse; font-size: 15px; max-width: 420px; }
-  #history-summary td { padding: 4px 2px; }
-  #history-summary td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
-  #history-summary th { text-align: right; color: #888; font-size: 12px; font-weight: 600; }
-  #history-summary th:first-child { text-align: left; }
-  #chart { width: 100%; background: #f5f5f5; border-radius: 12px; margin-bottom: 14px; display: block; }
   #history-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .solve-row {
     position: relative; background: #fff; border: 1px solid #eee; border-radius: 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 8px 10px 12px; cursor: pointer;
     min-height: 76px; display: flex; flex-direction: column;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   }
   .solve-row:active { background: #f5f5f5; }
+  /* Nút xóa ở góc trên-trái thẻ, chỉ hiện khi nhấn giữ thẻ (kiểu iOS). */
+  .solve-row .del-badge {
+    display: none; position: absolute; top: -9px; left: -9px; width: 26px; height: 26px;
+    border-radius: 50%; border: 2px solid #fff; background: #d32f2f; color: #fff;
+    font-size: 14px; line-height: 1; padding: 0; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); z-index: 2; cursor: pointer;
+  }
+  .solve-row.show-del .del-badge { display: flex; }
+  .solve-row.show-del { animation: jiggle 0.3s ease-in-out infinite; }
+  @keyframes jiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-1.2deg); }
+    75% { transform: rotate(1.2deg); }
+  }
   .solve-row .date { color: #999; font-size: 12px; text-align: left; }
   .solve-row .time {
     font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 21px;
@@ -147,18 +150,6 @@
 
 <!-- ================= TRANG LỊCH SỬ ================= -->
 <div id="history-view" class="hidden">
-  <div class="history-head">
-    <h2>Lịch sử</h2>
-    <div class="history-actions">
-      <button id="btn-export-json">Xuất JSON</button>
-      <button id="btn-export-csv">Xuất CSV</button>
-      <button id="btn-import">Nhập JSON</button>
-      <input type="file" id="file-import" accept=".json,application/json" hidden>
-      <button id="btn-clear-all" class="danger">Xóa toàn bộ</button>
-    </div>
-  </div>
-  <div id="history-summary"></div>
-  <canvas id="chart" height="180"></canvas>
   <div id="history-list"></div>
 </div>
 
@@ -270,38 +261,6 @@ function bestAverageOf(solves, n) {
   }
   if (best === null) return { status: 'dnf' };
   return { status: 'ok', value: best };
-}
-
-// --- Lượt nhanh nhất (bỏ qua DNF). Trả về mili-giây hoặc null.
-function bestSingle(solves) {
-  let best = null;
-  for (const s of solves) {
-    if (s.time !== null && (best === null || s.time < best)) best = s.time;
-  }
-  return best;
-}
-
-// --- Trung bình cộng của các lượt không DNF. Trả về mili-giây hoặc null.
-function meanOf(solves) {
-  let sum = 0, count = 0;
-  for (const s of solves) {
-    if (s.time !== null) { sum += s.time; count++; }
-  }
-  return count === 0 ? null : sum / count;
-}
-
-// --- Độ lệch chuẩn (quần thể) của các lượt không DNF. Trả về mili-giây
-// --- hoặc null nếu chưa đủ 2 lượt hợp lệ.
-function stddevOf(solves) {
-  const vals = [];
-  for (const s of solves) if (s.time !== null) vals.push(s.time);
-  if (vals.length < 2) return null;
-  let sum = 0;
-  for (const v of vals) sum += v;
-  const mean = sum / vals.length;
-  let sq = 0;
-  for (const v of vals) sq += (v - mean) * (v - mean);
-  return Math.sqrt(sq / vals.length);
 }
 
 // --- Định dạng thời gian: cắt (truncate) về 0.01s như WCA, dạng M:SS.cc.
@@ -702,7 +661,6 @@ function showHistory() {
   $('#history-view').classList.remove('hidden');
   setNav('history');
   renderHistory();
-  drawChart();
 }
 function showTimer() {
   currentView = 'timer';
@@ -713,19 +671,6 @@ function showTimer() {
 }
 
 function renderHistory() {
-  const best = bestSingle(solves);
-  const mean = meanOf(solves);
-  let table = '<table><tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>';
-  for (const n of [3, 5, 15, 50, 100]) {
-    table += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(solves, n)) +
-      '</td><td class="num">' + fmtAverageResult(bestAverageOf(solves, n)) + '</td></tr>';
-  }
-  table += '</table>';
-  $('#history-summary').innerHTML =
-    '<div class="sum-line"><span>Lượt giải: <b>' + solves.length + '</b></span>' +
-    '<span>Tốt nhất: <b>' + (best === null ? '-' : fmt(best)) + '</b></span>' +
-    '<span>Mean: <b>' + (mean === null ? '-' : fmtAvg(mean)) + '</b></span></div>' + table;
-
   const list = $('#history-list');
   if (solves.length === 0) {
     list.innerHTML = '<div class="empty-msg">Chưa có lượt giải nào.</div>';
@@ -737,77 +682,12 @@ function renderHistory() {
     const d = new Date(s.date);
     const dateStr = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
     html += '<div class="solve-row" data-id="' + s.id + '">' +
+      '<button class="del-badge" aria-label="Xóa lượt này">✕</button>' +
       '<span class="date">' + dateStr + (s.note ? ' &#9998;' : '') + '</span>' +
       '<span class="time' + (s.time === null ? ' dnf' : '') + '">' + escapeHtml(fmtSolve(s)) + '</span>' +
       '</div>';
   }
   list.innerHTML = html;
-}
-
-// Biểu đồ đường thời gian theo từng lượt (canvas thuần, không thư viện).
-function drawChart() {
-  const canvas = $('#chart');
-  const dpr = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth;
-  const height = 180;
-  canvas.width = Math.max(1, Math.round(width * dpr));
-  canvas.height = Math.round(height * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-  const valid = solves.filter(function (s) { return s.time !== null; }).map(function (s) { return s.time; });
-  if (valid.length < 2) {
-    ctx.fillStyle = '#999';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Cần ít nhất 2 lượt giải để vẽ biểu đồ', width / 2, height / 2);
-    return;
-  }
-  let min = Math.min.apply(null, valid), max = Math.max.apply(null, valid);
-  if (min === max) { min -= 1000; max += 1000; }
-  const padL = 58, padR = 12, padT = 12, padB = 22;
-  const plotW = width - padL - padR, plotH = height - padT - padB;
-  const xAt = function (i) { return padL + (solves.length <= 1 ? 0 : (i / (solves.length - 1)) * plotW); };
-  const yAt = function (t) { return padT + (1 - (t - min) / (max - min)) * plotH; };
-  // Lưới ngang + nhãn thời gian.
-  ctx.strokeStyle = '#e0e0e0';
-  ctx.fillStyle = '#999';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'right';
-  for (let g = 0; g <= 4; g++) {
-    const v = min + (max - min) * g / 4;
-    const gy = yAt(v);
-    ctx.beginPath();
-    ctx.moveTo(padL, gy);
-    ctx.lineTo(width - padR, gy);
-    ctx.stroke();
-    ctx.fillText(fmt(v), padL - 6, gy + 4);
-  }
-  // Đường thời gian, đứt đoạn ở DNF.
-  ctx.strokeStyle = '#43a047';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  let penDown = false;
-  solves.forEach(function (s, i) {
-    if (s.time === null) { penDown = false; return; }
-    if (!penDown) { ctx.moveTo(xAt(i), yAt(s.time)); penDown = true; }
-    else ctx.lineTo(xAt(i), yAt(s.time));
-  });
-  ctx.stroke();
-  // Chấm từng lượt.
-  ctx.fillStyle = '#2e7d32';
-  solves.forEach(function (s, i) {
-    if (s.time === null) return;
-    ctx.beginPath();
-    ctx.arc(xAt(i), yAt(s.time), 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  // Nhãn trục X.
-  ctx.fillStyle = '#999';
-  ctx.textAlign = 'left';
-  ctx.fillText('#1', padL, height - 6);
-  ctx.textAlign = 'right';
-  ctx.fillText('#' + solves.length, width - padR, height - 6);
 }
 
 // --- Modal chi tiết lượt giải ---
@@ -840,57 +720,6 @@ function openSettings() {
 }
 function closeSettings() {
   $('#settings-modal').classList.add('hidden');
-}
-
-// --- Xuất / Nhập dữ liệu ---
-function downloadBlob(content, filename, mime) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-}
-function exportJSON() {
-  downloadBlob(JSON.stringify(solves, null, 2), 'cube-timer.json', 'application/json');
-}
-function exportCSV() {
-  const q = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
-  let csv = '\uFEFFSTT,Thời gian (giây),Scramble,Ngày giờ,Ghi chú\n';
-  solves.forEach(function (s, i) {
-    csv += (i + 1) + ',' + (s.time === null ? 'DNF' : (s.time / 1000).toFixed(2) + (s.plus2 ? '+' : '')) +
-      ',' + q(s.scramble) + ',' + q(new Date(s.date).toLocaleString('vi-VN')) + ',' + q(s.note || '') + '\n';
-  });
-  downloadBlob(csv, 'cube-timer.csv', 'text/csv;charset=utf-8');
-}
-function importJSON(file) {
-  const reader = new FileReader();
-  reader.onload = function () {
-    try {
-      const arr = JSON.parse(reader.result);
-      if (!Array.isArray(arr)) throw new Error('not array');
-      const existing = new Set(solves.map(function (s) { return s.id; }));
-      let added = 0;
-      for (const s of arr) {
-        if (!validSolve(s) || existing.has(s.id)) continue;
-        solves.push({ id: s.id, raw: (s.raw === undefined ? s.time : s.raw), time: s.time,
-          plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '' });
-        existing.add(s.id);
-        added++;
-      }
-      solves.sort(function (a, b) { return a.date - b.date; });
-      saveSolves();
-      renderHistory();
-      renderTimer();
-      alert('Đã nhập ' + added + ' lượt giải mới.');
-    } catch (e) {
-      alert('File JSON không hợp lệ.');
-    }
-  };
-  reader.readAsText(file);
 }
 
 /* =====================================================================
@@ -966,26 +795,48 @@ $('#set-beep').addEventListener('change', function (e) {
   settings.beep = e.target.checked;
   saveSettings();
 });
-$('#btn-export-json').addEventListener('click', exportJSON);
-$('#btn-export-csv').addEventListener('click', exportCSV);
-$('#btn-import').addEventListener('click', function () { $('#file-import').click(); });
-$('#file-import').addEventListener('change', function (e) {
-  if (e.target.files.length) importJSON(e.target.files[0]);
-  e.target.value = '';
-});
-$('#btn-clear-all').addEventListener('click', function () {
-  if (!solves.length) return;
-  if (confirm('Xóa toàn bộ ' + solves.length + ' lượt giải?')) {
-    solves = [];
-    saveSolves();
-    renderHistory();
-    renderTimer();
-  }
-});
 $('#history-list').addEventListener('click', function (e) {
+  if (lpFired) { lpFired = false; return; } // vừa nhấn giữ xong, đừng mở chi tiết
+  const badge = e.target.closest('.del-badge');
+  if (badge) {
+    const row = badge.closest('.solve-row');
+    if (row && confirm('Xóa lượt giải này?')) {
+      solves = solves.filter(function (x) { return x.id !== row.dataset.id; });
+      saveSolves();
+      renderHistory();
+    } else {
+      clearDelBadge();
+    }
+    return;
+  }
+  if (document.querySelector('.solve-row.show-del')) { clearDelBadge(); return; } // bấm chỗ khác thì tắt nút xóa
   const row = e.target.closest('.solve-row');
   if (row) openDetail(row.dataset.id);
 });
+
+// Nhấn giữ vào thẻ lượt giải để hiện nút xóa ở góc trên-trái (kiểu iOS).
+let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
+function clearDelBadge() {
+  document.querySelectorAll('.solve-row.show-del').forEach(function (r) { r.classList.remove('show-del'); });
+}
+function clearLpTimer() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
+$('#history-list').addEventListener('pointerdown', function (e) {
+  lpFired = false; // lần chạm mới thì reset cờ nhấn giữ (kể cả khi bấm vào nút xóa)
+  const row = e.target.closest('.solve-row');
+  if (!row || e.target.closest('.del-badge')) return;
+  lpX = e.clientX; lpY = e.clientY;
+  lpTimer = setTimeout(function () {
+    lpFired = true;
+    clearDelBadge();
+    row.classList.add('show-del');
+  }, 500);
+});
+$('#history-list').addEventListener('pointermove', function (e) {
+  if (lpTimer && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) clearLpTimer();
+});
+$('#history-list').addEventListener('pointerup', clearLpTimer);
+$('#history-list').addEventListener('pointercancel', clearLpTimer);
+$('#history-list').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 $('#detail-close').addEventListener('click', closeDetail);
 $('#detail-save').addEventListener('click', function () {
   const s = solves.find(function (x) { return x.id === detailSolveId; });
@@ -1019,9 +870,6 @@ document.querySelectorAll('.modal').forEach(function (m) {
   m.addEventListener('click', function (e) {
     if (e.target === m) { closeDetail(); closeSettings(); }
   });
-});
-window.addEventListener('resize', function () {
-  if (currentView === 'history') drawChart();
 });
 
 // Khởi động.

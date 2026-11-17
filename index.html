@@ -9,68 +9,80 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: #121212; color: #e0e0e0;
+    background: #ffffff; color: #222;
     font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     min-height: 100dvh; display: flex; flex-direction: column;
     overscroll-behavior: none;
   }
   .hidden { display: none !important; }
   button {
-    background: #2a2a2a; color: #e0e0e0; border: 1px solid #444;
+    background: #f0f0f0; color: #333; border: 1px solid #ddd;
     border-radius: 8px; padding: 10px 14px; font-size: 15px; cursor: pointer;
   }
-  button:hover { background: #383838; }
+  button:hover { background: #e4e4e4; }
   button:disabled { opacity: 0.4; cursor: default; }
-  button.danger { border-color: #7a2e2e; color: #ff8a80; }
+  button.danger { border-color: #e0a0a0; color: #d32f2f; }
   button.primary { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 
   /* ---- Màn hình Timer ---- */
-  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #timer-view { display: flex; flex-direction: column; flex: 1; min-height: 100dvh; max-width: 860px; width: 100%; margin: 0 auto; padding-bottom: 72px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 2px; }
+  .topbar h1 { margin: 0; font-size: 22px; font-weight: 700; text-align: center; }
+  .topbar .sub { font-size: 13px; color: #999; text-align: center; }
+  .icon-btn { background: none; border: none; font-size: 24px; padding: 6px 10px; color: #333; }
+  .icon-btn:hover { background: #f0f0f0; }
+  .scramble-wrap { padding: 8px 16px 0; }
   .scramble {
-    text-align: center; font-weight: 700;
-    font-size: clamp(20px, 3.6vw, 30px); line-height: 1.45;
-    padding: 18px 16px 8px; min-height: 2.6em; word-break: break-word;
+    text-align: center; font-weight: 700; color: #333;
+    font-size: clamp(20px, 3.6vw, 28px); line-height: 1.45;
+    min-height: 2.6em; word-break: break-word;
   }
-  .layout { display: flex; flex: 1; min-height: 0; gap: 16px; padding: 0 16px 16px; }
-  .timer-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   #timer-zone {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    touch-action: none; user-select: none; -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent; cursor: pointer; min-height: 220px;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent; cursor: pointer; min-height: 180px;
   }
   .clock {
     font-family: 'SF Mono', 'Roboto Mono', Consolas, 'Courier New', monospace;
-    font-weight: 700; font-size: clamp(64px, 15vw, 150px); line-height: 1;
-    color: #fff; text-align: center;
+    font-weight: 700; font-size: clamp(64px, 19vw, 170px); line-height: 1;
+    color: #222; text-align: center;
   }
-  .clock.ready { color: #4caf50; }
-  .clock.hold { color: #ff5252; }
-  .clock.warn-yellow { color: #ffeb3b; }
-  .clock.warn-red { color: #ff5252; }
-  .hint { margin-top: 16px; color: #999; font-size: 16px; text-align: center; }
-  .status { margin-top: 8px; color: #ff8a80; font-size: 15px; min-height: 1.2em; text-align: center; }
-  .buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px 0 4px; }
-
-  .stats {
-    width: 240px; flex-shrink: 0; background: #1e1e1e; border-radius: 12px;
-    padding: 14px; align-self: flex-start; position: sticky; top: 12px;
-  }
-  .stats h3 { margin: 0 0 10px; font-size: 15px; color: #bbb; font-weight: 600; }
-  .stats table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  .stats td { padding: 5px 2px; }
-  .stats td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
-  .stats th { text-align: right; color: #888; font-size: 12px; font-weight: 600; padding-bottom: 4px; }
-  .stats th:first-child { text-align: left; }
-  .stats tr.total td { border-top: 1px solid #333; font-weight: 700; }
+  .clock.running { color: #2e7d32; }
+  .clock.warn-yellow { color: #ef6c00; }
+  .clock.warn-red { color: #d32f2f; }
+  .hint { margin-top: 14px; color: #999; font-size: 15px; text-align: center; }
+  .status { margin-top: 6px; color: #d32f2f; font-size: 14px; min-height: 1.2em; text-align: center; }
+  .action-row { display: flex; gap: 28px; justify-content: center; padding: 10px 0 6px; }
+  .action-row button { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 22px; color: #555; padding: 6px 10px; }
+  .action-row button small { font-size: 12px; color: #999; }
+  .action-row button:hover { background: #f5f5f5; }
+  .action-row button:disabled { opacity: 0.3; }
+  .stats-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px 8px; font-size: 14px; }
+  .sum-col { display: flex; flex-direction: column; gap: 5px; }
+  .sum-col div { display: flex; justify-content: space-between; gap: 18px; }
+  .sum-col span { color: #888; }
+  .sum-col b { font-family: 'SF Mono', Consolas, monospace; font-weight: 600; }
+  .ao-col table { border-collapse: collapse; font-size: 14px; }
+  .ao-col td { padding: 2px 2px 2px 10px; }
+  .ao-col td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
+  .ao-col th { text-align: right; color: #aaa; font-size: 11px; font-weight: 600; padding: 0 2px 2px 10px; }
+  .ao-col th:first-child { text-align: left; }
   body.running .hide-while-running { display: none !important; }
   body.running #timer-zone { min-height: 0; }
 
+  /* ---- Thanh điều hướng dưới ---- */
+  .bottomnav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 860px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; z-index: 5; }
+  .bottomnav button { flex: 1; background: none; border: none; border-radius: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 0 12px; font-size: 20px; color: #999; }
+  .bottomnav button small { font-size: 12px; }
+  .bottomnav button.active { color: #2e7d32; }
+  .bottomnav button:hover { background: #f9f9f9; }
+
   /* ---- Trang Lịch sử ---- */
-  #history-view { padding: 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+  #history-view { padding: 16px 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; }
   .history-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .history-head h2 { margin: 0; flex: 1; font-size: 22px; }
   .history-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  #history-summary { background: #1e1e1e; border-radius: 12px; padding: 14px; margin: 14px 0; }
+  #history-summary { background: #f5f5f5; border-radius: 12px; padding: 14px; margin: 14px 0; }
   #history-summary .sum-line { display: flex; gap: 24px; flex-wrap: wrap; font-size: 15px; margin-bottom: 10px; }
   #history-summary .sum-line b { font-family: 'SF Mono', Consolas, monospace; }
   #history-summary table { width: 100%; border-collapse: collapse; font-size: 15px; max-width: 420px; }
@@ -78,28 +90,28 @@
   #history-summary td.num { text-align: right; font-family: 'SF Mono', Consolas, monospace; }
   #history-summary th { text-align: right; color: #888; font-size: 12px; font-weight: 600; }
   #history-summary th:first-child { text-align: left; }
-  #chart { width: 100%; background: #1e1e1e; border-radius: 12px; margin-bottom: 14px; display: block; }
+  #chart { width: 100%; background: #f5f5f5; border-radius: 12px; margin-bottom: 14px; display: block; }
   .solve-row {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-    background: #1e1e1e; border-radius: 8px; margin-bottom: 6px; cursor: pointer;
+    background: #f5f5f5; border-radius: 8px; margin-bottom: 6px; cursor: pointer;
   }
-  .solve-row:hover { background: #262626; }
-  .solve-row .idx { color: #888; width: 42px; flex-shrink: 0; font-size: 14px; }
+  .solve-row:hover { background: #eeeeee; }
+  .solve-row .idx { color: #999; width: 42px; flex-shrink: 0; font-size: 14px; }
   .solve-row .time { font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 18px; width: 110px; flex-shrink: 0; }
-  .solve-row .time.dnf { color: #ff5252; }
-  .solve-row .scr { flex: 1; color: #bbb; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .solve-row .time.dnf { color: #d32f2f; }
+  .solve-row .scr { flex: 1; color: #666; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .solve-row .ao { color: #888; font-size: 12px; width: 205px; flex-shrink: 0; text-align: right; font-family: 'SF Mono', Consolas, monospace; }
   .solve-row .date { color: #888; font-size: 12px; width: 108px; flex-shrink: 0; text-align: right; }
-  .empty-msg { color: #888; text-align: center; padding: 30px 0; }
+  .empty-msg { color: #999; text-align: center; padding: 30px 0; }
 
   /* ---- Modal ---- */
   .modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
     display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px;
   }
-  .modal-card { background: #1e1e1e; border-radius: 12px; padding: 20px; width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto; }
+  .modal-card { background: #fff; border-radius: 12px; padding: 20px; width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
   .modal-card h3 { margin-top: 0; }
-  .modal-card textarea { width: 100%; background: #121212; color: #e0e0e0; border: 1px solid #444; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; }
+  .modal-card textarea { width: 100%; background: #f9f9f9; color: #222; border: 1px solid #ddd; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; }
   .modal-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
   .detail-line { margin: 6px 0; font-size: 15px; }
   .detail-line b { font-family: 'SF Mono', Consolas, monospace; }
@@ -108,12 +120,9 @@
   .note { color: #888; font-size: 14px; }
 
   @media (max-width: 760px) {
-    .layout { flex-direction: column; }
-    .stats { width: 100%; order: -1; position: static; padding: 10px 12px; }
-    .stats table { font-size: 14px; }
-    .scramble { padding-top: 12px; }
     .solve-row .ao, .solve-row .date { display: none; }
     .solve-row .time { width: 92px; font-size: 16px; }
+    .stats-row { padding: 10px 16px 6px; }
   }
 </style>
 </head>
@@ -121,31 +130,28 @@
 
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
-  <div id="scramble" class="scramble hide-while-running"></div>
-  <div class="layout">
-    <div class="timer-col">
-      <div id="timer-zone">
-        <div id="clock" class="clock">0:00.00</div>
-        <div id="hint" class="hint"></div>
-        <div id="status" class="status"></div>
-      </div>
-      <div class="buttons hide-while-running">
-        <button id="btn-new-scramble">Scramble mới</button>
-        <button id="btn-plus2" title="Cộng/trừ 2 giây cho lượt vừa giải">+2</button>
-        <button id="btn-dnf" title="Đánh dấu/bỏ DNF cho lượt vừa giải">DNF</button>
-        <button id="btn-del-last">Xóa lượt vừa giải</button>
-        <button id="btn-history">Lịch sử</button>
-        <button id="btn-settings">Cài đặt</button>
-      </div>
-    </div>
-    <aside id="stats" class="stats hide-while-running"></aside>
+  <header class="topbar hide-while-running">
+    <button id="btn-settings" class="icon-btn" title="Cài đặt">⚙️</button>
+    <div><h1>Khối 3×3</h1><div class="sub">20 nước • Chuẩn WCA</div></div>
+    <button id="btn-new-scramble" class="icon-btn" title="Scramble mới">↻</button>
+  </header>
+  <div class="scramble-wrap hide-while-running"><div id="scramble" class="scramble"></div></div>
+  <div id="timer-zone">
+    <div id="clock" class="clock">0:00.00</div>
+    <div id="hint" class="hint"></div>
+    <div id="status" class="status"></div>
   </div>
+  <div class="action-row hide-while-running">
+    <button id="btn-plus2" title="Cộng/trừ 2 giây cho lượt vừa giải">⚑<small>+2</small></button>
+    <button id="btn-dnf" title="Đánh dấu/bỏ DNF cho lượt vừa giải">⊘<small>DNF</small></button>
+    <button id="btn-del-last" title="Xóa lượt vừa giải">✕<small>Xóa</small></button>
+  </div>
+  <section id="stats-row" class="stats-row hide-while-running"></section>
 </div>
 
 <!-- ================= TRANG LỊCH SỬ ================= -->
 <div id="history-view" class="hidden">
   <div class="history-head">
-    <button id="btn-back">← Timer</button>
     <h2>Lịch sử</h2>
     <div class="history-actions">
       <button id="btn-export-json">Xuất JSON</button>
@@ -159,6 +165,12 @@
   <canvas id="chart" height="180"></canvas>
   <div id="history-list"></div>
 </div>
+
+<!-- ================= THANH ĐIỀU HƯỚNG DƯỚI ================= -->
+<nav class="bottomnav hide-while-running">
+  <button id="nav-timer" class="active">⏱<small>Timer</small></button>
+  <button id="nav-history">☰<small>Lịch sử</small></button>
+</nav>
 
 <!-- ================= MODAL CHI TIẾT LƯỢT GIẢI ================= -->
 <div id="detail-modal" class="modal hidden">
@@ -185,7 +197,7 @@
     <h3>Cài đặt</h3>
     <label class="check"><input type="checkbox" id="set-inspection" checked> Inspection 15 giây (chuẩn WCA)</label>
     <label class="check"><input type="checkbox" id="set-beep" checked> Âm báo ở giây thứ 8 và 12 khi nhìn trước</label>
-    <p class="note">Giữ Space hoặc chạm giữ màn hình 0.3s để sẵn sàng, thả ra để bắt đầu. Chạm bất kỳ phím/màn hình để dừng.</p>
+    <p class="note">Chạm 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp: hoàn tác lượt vừa giải và về scramble đó.</p>
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
     </div>
@@ -282,6 +294,20 @@ function meanOf(solves) {
   return count === 0 ? null : sum / count;
 }
 
+// --- Độ lệch chuẩn (quần thể) của các lượt không DNF. Trả về mili-giây
+// --- hoặc null nếu chưa đủ 2 lượt hợp lệ.
+function stddevOf(solves) {
+  const vals = [];
+  for (const s of solves) if (s.time !== null) vals.push(s.time);
+  if (vals.length < 2) return null;
+  let sum = 0;
+  for (const v of vals) sum += v;
+  const mean = sum / vals.length;
+  let sq = 0;
+  for (const v of vals) sq += (v - mean) * (v - mean);
+  return Math.sqrt(sq / vals.length);
+}
+
 // --- Định dạng thời gian: cắt (truncate) về 0.01s như WCA, dạng M:SS.cc.
 function fmt(ms) {
   if (ms === null || ms === undefined || ms < 0) return 'DNF';
@@ -360,18 +386,20 @@ let settings = loadSettings();
 let currentView = 'timer'; // 'timer' | 'history'
 let detailSolveId = null;
 
-// Trạng thái bấm giờ: 'idle' | 'holding' | 'ready' | 'running'
+// Trạng thái bấm giờ: 'idle' | 'inspecting' | 'running'
+// Luồng chạm: 1 lần = inspection 15s, chạm tiếp = bắt đầu giải,
+// chạm = dừng, chạm 2 lần liên tiếp = hoàn tác lượt vừa giải.
 let phase = 'idle';
-let pressStart = 0;    // performance.now() lúc nhấn xuống
 let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
 let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
 let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
 let currentScramble = generateScramble();
 let rafId = null;
+let tapTimer = null;   // hẹn giờ phân biệt chạm 1 lần với chạm 2 lần
 let audioCtx = null;
 
-const HOLD_MS = 300;        // giữ 0.3s để sẵn sàng
+const TAP_WINDOW_MS = 300;  // 2 lần chạm trong 300ms = chạm đúp (hoàn tác)
 const INSPECT_MS = 15000;   // nhìn trước 15s
 const INSPECT_DNF_MS = 17000; // quá 17s: DNF
 const PLUS2_MS = 2000;
@@ -389,58 +417,60 @@ function stopLoop() {
 
 function loop() {
   if (phase === 'idle') { rafId = null; return; }
-  if (currentView !== 'timer') { cancelHold(); return; }
+  if (currentView !== 'timer') { cancelTiming(); return; }
   const now = performance.now();
-  if ((phase === 'holding' || phase === 'ready') && settings.inspection) {
+  if (phase === 'inspecting') {
     const elapsed = now - inspectStart;
     if (elapsed >= INSPECT_DNF_MS) { recordInspectionDnf(); return; }
     if (elapsed >= 8000 && !beeped8) { beeped8 = true; beep(); }
     if (elapsed >= 12000 && !beeped12) { beeped12 = true; beep(); }
     if (elapsed >= INSPECT_MS) pendingPlus2 = true;
   }
-  if (phase === 'holding' && now - pressStart >= HOLD_MS) phase = 'ready';
   updateClock();
   rafId = requestAnimationFrame(loop);
 }
 
-// Nhấn xuống: đang chạy thì dừng; đang nghỉ thì bắt đầu nhìn trước (hoặc giữ để sẵn sàng).
-function pressDown() {
+// Chạm (hoặc Space): đang chạy thì dừng; đang nhìn trước thì bắt đầu giải;
+// đang nghỉ thì chờ 300ms để phân biệt chạm 1 lần (bắt đầu) với chạm đúp (hoàn tác).
+function handleTap() {
   if (currentView !== 'timer' || modalOpen() || inputFocused()) return;
+  ensureAudio();
   if (phase === 'running') { stopSolve(); return; }
-  if (phase !== 'idle') return;
-  pressStart = performance.now();
-  inspectStart = pressStart;
-  beeped8 = false; beeped12 = false;
-  pendingPlus2 = false;
-  phase = 'holding';
+  if (phase === 'inspecting') { startSolve(); return; }
+  if (tapTimer) {
+    clearTimeout(tapTimer); tapTimer = null;
+    if (solves.length) undoLastSolve();
+    else startInspectionOrSolve();
+    return;
+  }
+  tapTimer = setTimeout(function () { tapTimer = null; startInspectionOrSolve(); }, TAP_WINDOW_MS);
+}
+
+function startInspectionOrSolve() {
+  if (phase !== 'idle' || currentView !== 'timer') return;
   setStatus('');
-  startLoop();
+  if (settings.inspection) {
+    inspectStart = performance.now();
+    beeped8 = false; beeped12 = false;
+    pendingPlus2 = false;
+    phase = 'inspecting';
+    startLoop();
+  } else {
+    startSolve();
+  }
   updateClock();
 }
 
-// Thả ra: giữ đủ 0.3s thì bắt đầu chạy; chạm nhanh thì hủy (chống chạm nhầm).
-function pressUp() {
-  if (phase !== 'holding' && phase !== 'ready') return;
-  if (currentView !== 'timer' || modalOpen()) { cancelHold(); return; }
-  if (performance.now() - pressStart < HOLD_MS) {
-    phase = 'idle';
-    stopLoop();
-    renderTimer();
-    return;
-  }
-  startSolve();
-}
-
-// Bị ngắt giữa chừng (ví dụ cuộc gọi đến): hủy lượt giữ.
-function cancelHold() {
-  if (phase !== 'holding' && phase !== 'ready') return;
+// Bị ngắt giữa chừng (ví dụ rời màn hình Timer khi đang nhìn trước): hủy lượt.
+function cancelTiming() {
+  if (phase !== 'inspecting') return;
   phase = 'idle';
   stopLoop();
   renderTimer();
 }
 
 function startSolve() {
-  if (settings.inspection && performance.now() - inspectStart >= INSPECT_MS) {
+  if (phase === 'inspecting' && performance.now() - inspectStart >= INSPECT_MS) {
     pendingPlus2 = true; // bắt đầu trong khoảng 15-17s: +2
   }
   solveStart = performance.now();
@@ -460,6 +490,19 @@ function stopSolve() {
   phase = 'idle';
   document.body.classList.remove('running');
   stopLoop();
+  renderTimer();
+}
+
+// Hoàn tác lượt vừa giải: xóa lượt đó và quay về scramble vừa giải.
+function undoLastSolve() {
+  if (!solves.length) return;
+  const last = solves.pop();
+  currentScramble = last.scramble;
+  saveSolves();
+  setStatus('Đã hoàn tác lượt vừa giải');
+  setTimeout(function () {
+    if ($('#status').textContent === 'Đã hoàn tác lượt vừa giải') setStatus('');
+  }, 2500);
   renderTimer();
 }
 
@@ -511,29 +554,23 @@ function updateClock() {
   const clock = $('#clock');
   if (phase === 'running') {
     clock.textContent = fmt(performance.now() - solveStart);
-    clock.className = 'clock';
+    clock.className = 'clock running';
     setHint('Chạm để dừng');
     return;
   }
-  if (phase === 'holding' || phase === 'ready') {
-    if (settings.inspection) {
-      const elapsed = performance.now() - inspectStart;
-      const remain = INSPECT_MS - elapsed;
-      if (remain <= 0) {
-        clock.textContent = '+2';
-        clock.className = 'clock warn-red';
-        setHint('Đang +2 - thả ra để bắt đầu');
-      } else {
-        clock.textContent = String(Math.ceil(remain / 1000));
-        if (elapsed >= 12000) clock.className = 'clock warn-red';
-        else if (elapsed >= 8000) clock.className = 'clock warn-yellow';
-        else clock.className = 'clock';
-        setHint(phase === 'ready' ? 'Thả ra để bắt đầu' : 'Đang nhìn trước...');
-      }
+  if (phase === 'inspecting') {
+    const elapsed = performance.now() - inspectStart;
+    const remain = INSPECT_MS - elapsed;
+    if (remain <= 0) {
+      clock.textContent = '+2';
+      clock.className = 'clock warn-red';
+      setHint('Đang +2 - chạm để bắt đầu');
     } else {
-      clock.textContent = '0:00.00';
-      clock.className = phase === 'ready' ? 'clock ready' : 'clock hold';
-      setHint(phase === 'ready' ? 'Thả ra để bắt đầu' : 'Giữ 0.3s để sẵn sàng');
+      clock.textContent = String(Math.ceil(remain / 1000));
+      if (elapsed >= 12000) clock.className = 'clock warn-red';
+      else if (elapsed >= 8000) clock.className = 'clock warn-yellow';
+      else clock.className = 'clock';
+      setHint('Chạm để bắt đầu giải');
     }
     return;
   }
@@ -541,28 +578,32 @@ function updateClock() {
   const last = solves[solves.length - 1];
   clock.textContent = last ? fmtSolve(last) : '0:00.00';
   clock.className = 'clock';
-  setHint(solves.length ? 'Nhấn giữ để bắt đầu lượt mới' : 'Nhấn giữ Space hoặc chạm giữ màn hình để bắt đầu');
+  setHint(settings.inspection ? 'Chạm để bắt đầu inspection' : 'Chạm để bắt đầu');
 }
 
-// Bảng thống kê Ao3/5/15/50/100: cột Hiện tại và Tốt nhất.
-function statsTableHTML() {
-  const ns = [3, 5, 15, 50, 100];
+// Hàng thống kê dưới màn hình Timer: trái là độ lệch/trung bình/tốt nhất/số lần,
+// phải là bảng Ao3/5/15/50/100 (cột Hiện tại và Tốt nhất).
+function statsRowHTML() {
+  const sd = stddevOf(solves);
+  const mean = meanOf(solves);
+  const best = bestSingle(solves);
+  let left = '<div class="sum-col">' +
+    '<div><span>Độ lệch</span><b>' + (sd === null ? '--' : (sd / 1000).toFixed(2)) + '</b></div>' +
+    '<div><span>Trung bình</span><b>' + (mean === null ? '--' : fmtAvg(mean)) + '</b></div>' +
+    '<div><span>Tốt nhất</span><b>' + (best === null ? '--' : fmt(best)) + '</b></div>' +
+    '<div><span>Số lần</span><b>' + solves.length + '</b></div></div>';
   let rows = '';
-  for (const n of ns) {
+  for (const n of [3, 5, 15, 50, 100]) {
     rows += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(solves, n)) +
       '</td><td class="num">' + fmtAverageResult(bestAverageOf(solves, n)) + '</td></tr>';
   }
-  const best = bestSingle(solves);
-  return '<h3>Thống kê</h3><table>' +
-    '<tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>' + rows +
-    '<tr class="total"><td>Tốt nhất</td><td class="num" colspan="2">' + (best === null ? '-' : fmt(best)) + '</td></tr>' +
-    '<tr><td>Lượt giải</td><td class="num" colspan="2">' + solves.length + '</td></tr>' +
-    '</table>';
+  return left + '<div class="ao-col"><table>' +
+    '<tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>' + rows + '</table></div>';
 }
 
 function renderTimer() {
   $('#scramble').textContent = currentScramble;
-  $('#stats').innerHTML = statsTableHTML();
+  $('#stats-row').innerHTML = statsRowHTML();
   const last = solves[solves.length - 1];
   $('#btn-plus2').disabled = !last || last.time === null;
   $('#btn-dnf').disabled = !last || (last.time === null && last.raw === null);
@@ -604,11 +645,18 @@ function inputFocused() {
   return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
 }
 
+function setNav(view) {
+  $('#nav-timer').classList.toggle('active', view === 'timer');
+  $('#nav-history').classList.toggle('active', view === 'history');
+}
+
 function showHistory() {
-  cancelHold();
+  if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+  cancelTiming();
   currentView = 'history';
   $('#timer-view').classList.add('hidden');
   $('#history-view').classList.remove('hidden');
+  setNav('history');
   renderHistory();
   drawChart();
 }
@@ -616,6 +664,7 @@ function showTimer() {
   currentView = 'timer';
   $('#history-view').classList.add('hidden');
   $('#timer-view').classList.remove('hidden');
+  setNav('timer');
   renderTimer();
 }
 
@@ -671,7 +720,7 @@ function drawChart() {
   ctx.clearRect(0, 0, width, height);
   const valid = solves.filter(function (s) { return s.time !== null; }).map(function (s) { return s.time; });
   if (valid.length < 2) {
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#999';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Cần ít nhất 2 lượt giải để vẽ biểu đồ', width / 2, height / 2);
@@ -684,8 +733,8 @@ function drawChart() {
   const xAt = function (i) { return padL + (solves.length <= 1 ? 0 : (i / (solves.length - 1)) * plotW); };
   const yAt = function (t) { return padT + (1 - (t - min) / (max - min)) * plotH; };
   // Lưới ngang + nhãn thời gian.
-  ctx.strokeStyle = '#333';
-  ctx.fillStyle = '#888';
+  ctx.strokeStyle = '#e0e0e0';
+  ctx.fillStyle = '#999';
   ctx.font = '11px monospace';
   ctx.textAlign = 'right';
   for (let g = 0; g <= 4; g++) {
@@ -698,7 +747,7 @@ function drawChart() {
     ctx.fillText(fmt(v), padL - 6, gy + 4);
   }
   // Đường thời gian, đứt đoạn ở DNF.
-  ctx.strokeStyle = '#4caf50';
+  ctx.strokeStyle = '#43a047';
   ctx.lineWidth = 2;
   ctx.beginPath();
   let penDown = false;
@@ -709,7 +758,7 @@ function drawChart() {
   });
   ctx.stroke();
   // Chấm từng lượt.
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#2e7d32';
   solves.forEach(function (s, i) {
     if (s.time === null) return;
     ctx.beginPath();
@@ -717,7 +766,7 @@ function drawChart() {
     ctx.fill();
   });
   // Nhãn trục X.
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#999';
   ctx.textAlign = 'left';
   ctx.fillText('#1', padL, height - 6);
   ctx.textAlign = 'right';
@@ -811,16 +860,12 @@ function importJSON(file) {
    PHẦN 6: SỰ KIỆN VÀ KHỞI ĐỘNG
    ===================================================================== */
 
-const zone = $('#timer-zone');
-zone.addEventListener('pointerdown', function (e) {
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  e.preventDefault();
-  ensureAudio();
-  pressDown();
+// Chạm vào màn hình Timer (trừ nút bấm, ô nhập): xử lý theo luồng chạm.
+$('#timer-view').addEventListener('click', function (e) {
+  if (e.target.closest('button, a, input, select, textarea, label')) return;
+  handleTap();
 });
-zone.addEventListener('pointerup', function (e) { e.preventDefault(); pressUp(); });
-zone.addEventListener('pointercancel', cancelHold);
-zone.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+$('#timer-zone').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
 window.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') { closeDetail(); closeSettings(); return; }
@@ -829,8 +874,7 @@ window.addEventListener('keydown', function (e) {
   if (e.repeat) return;
   if (e.code === 'Space') {
     e.preventDefault();
-    ensureAudio();
-    pressDown();
+    handleTap();
   } else if (phase === 'running' && !e.metaKey && !e.ctrlKey && !e.altKey &&
     e.code !== 'ShiftLeft' && e.code !== 'ShiftRight' &&
     e.code !== 'ControlLeft' && e.code !== 'ControlRight' &&
@@ -838,9 +882,6 @@ window.addEventListener('keydown', function (e) {
     e.code !== 'MetaLeft' && e.code !== 'MetaRight' && e.code !== 'CapsLock') {
     stopSolve(); // phím bất kỳ để dừng
   }
-});
-window.addEventListener('keyup', function (e) {
-  if (e.code === 'Space') { e.preventDefault(); pressUp(); }
 });
 
 // Nhả focus khỏi nút sau khi bấm để Space không bấm lại nút đó.
@@ -868,8 +909,8 @@ $('#btn-del-last').addEventListener('click', function () {
   saveSolves();
   renderTimer();
 });
-$('#btn-history').addEventListener('click', showHistory);
-$('#btn-back').addEventListener('click', showTimer);
+$('#nav-history').addEventListener('click', showHistory);
+$('#nav-timer').addEventListener('click', showTimer);
 $('#btn-settings').addEventListener('click', openSettings);
 $('#settings-close').addEventListener('click', closeSettings);
 $('#set-inspection').addEventListener('change', function (e) {

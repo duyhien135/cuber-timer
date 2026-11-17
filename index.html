@@ -453,7 +453,7 @@ function startInspectionOrSolve() {
   } else {
     startSolve();
   }
-  updateClock();
+  renderTimer();
 }
 
 // Bị ngắt giữa chừng (ví dụ rời màn hình Timer khi đang nhìn trước): hủy lượt.
@@ -471,7 +471,7 @@ function startSolve() {
   solveStart = performance.now();
   phase = 'running';
   document.body.classList.add('running');
-  updateClock();
+  renderTimer();
 }
 
 function stopSolve() {
@@ -652,9 +652,12 @@ function renderTimer() {
   $('#scramble').textContent = currentScramble;
   $('#stats-row').innerHTML = statsRowHTML();
   const last = solves[solves.length - 1];
-  $('#btn-plus2').disabled = !last || last.time === null;
-  $('#btn-dnf').disabled = !last || (last.time === null && last.raw === null);
-  $('#btn-del-last').disabled = !last;
+  // Đã bắt đầu lượt tiếp theo (đang nhìn trước/chạy giờ) thì khóa các nút sửa
+  // lượt trước — muốn sửa/xóa phải vô Lịch sử.
+  const locked = phase !== 'idle';
+  $('#btn-plus2').disabled = locked || !last || last.time === null;
+  $('#btn-dnf').disabled = locked || !last || (last.time === null && last.raw === null);
+  $('#btn-del-last').disabled = locked || !last;
   updateClock();
 }
 

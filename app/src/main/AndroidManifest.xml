@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Rung cảnh báo khi nhìn trước còn 7s / 3s -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:label="tdung cuti"
         android:icon="@mipmap/ic_launcher"

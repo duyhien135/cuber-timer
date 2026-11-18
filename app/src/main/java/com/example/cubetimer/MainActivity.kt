@@ -2,12 +2,45 @@ package com.example.cubetimer
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+
+/** Cau rung native cho WebView: navigator.vibrate khong an tren mot so may
+ *  (WebView cua OEM chan), nen JS goi window.AndroidVibrate.vibrate("[200]")
+ *  de rung truc tiep qua Vibrator cua he thong. Pattern JS truyen vao la
+ *  kieu navigator.vibrate ([200] = rung 200ms, [200,100,200] = rung-nghi-rung);
+ *  o day them so 0 o dau vi VibrationEffect tinh phan tu dau la thoi gian doi. */
+class VibrateBridge(private val context: Context) {
+    @JavascriptInterface
+    fun vibrate(patternJson: String) {
+        try {
+            val parts = patternJson.trim().trim('[', ']')
+                .split(",").mapNotNull { it.trim().toLongOrNull() }
+            if (parts.isEmpty()) return
+            val timings = longArrayOf(0L) + parts.toLongArray()
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            if (!vibrator.hasVibrator()) return
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
+        } catch (e: Exception) {
+            // Bo qua: may khong co motor rung hoac pattern loi.
+        }
+    }
+}
 
 /** App bam gio Rubik: WebView chay file index.html trong assets.
  *  Moi logic nam trong index.html o goc repo; CI copy no vao assets truoc khi build. */
@@ -24,6 +57,7 @@ class MainActivity : Activity() {
             settings.setSupportZoom(false)
             settings.builtInZoomControls = false
             settings.displayZoomControls = false
+            addJavascriptInterface(VibrateBridge(this@MainActivity), "AndroidVibrate")
             webViewClient = WebViewClient()
             // WebView khong tu hien hop thoai JS (alert/confirm) nen phai tu ve
             // bang AlertDialog, khong thi nut Xoa toan bo trong app se khong chay.

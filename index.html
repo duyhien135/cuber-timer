@@ -8,8 +8,12 @@
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
+  /* Nền: ảnh chuột cam mờ sau lớp trắng (vẫn nền trắng chủ đạo). */
+  html {
+    background: #ffffff url('data:image/jpeg;base64,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ic1Xc1K5qu5oEQyGq0hqaQ1Xc0xEL1A1TNUTVRLIjTDUhFMNMkZRSmkpiEooooAKKKKACiiigAooooAKKKKAH0UUUAJRS0lABRRRQAlFFFABRRRQAUUUUAFJS0lABRRRQAtFJS0ALRSUtAC0UlLQAtFJS0AFLSUUALRSUtABRRRQAUUUUAFLSUUAPBqVGqAGnqaALkb1cies1GqzG9SUjWierkb1kxSVdikqWWmaSNUymqUb1YRqktFgGnCo1NPBpFDqWkFLQIWiikpgLSUUlAhc0ZpuaTNACk0hNITSE0ABNNJpCaYTQIGNRsaVjUTGmA1jULmnsahc0AROarualc1A5oEQuagepXqFqYiJqjapTUZFMRERTCKlIppFMkiIpKeRTSKYhtJS0lMQUUUUAFFJRQAtFJRQAtFFFAD6KKKACkpaSgAooooAKSlpKACiiigAooooAKSlooASiiigAooooAWikpaAFopKKAHUUlLQAUtJRQAtFFFABS0lFAC0UlLQAUUUUAFOBptFAEympkaqoNSq1IZfjercUlZiPVqN6llJmrFJVuN6yopKuRPUs0TNFGqVTVON6sI1IosA0oqNTTwaAHUUmaTNAC0maTNJmgBc0hNJmkJoEBNNJpTTDQAE0wmlJqNjQAjGomNOY1ExoAaxqFjT2NRMaYiJzUD1M1QtQIhaomFTMKjIpiISKYRUxFMIoEREUwipiKYRTEQkU0ipSKYRTEREUlPIpppiG0UtJTEJRS0lABRS0UAFFFFAD6KWkoAKKKKAEopaKAEooooASilooASilooASiiigAooooAKSlpKACiiigApaSigBaWkooAWlpKKAFpaSigBaKSloAKKKKACiiigApaSigBwNOBplKDQBOrVPG9VFNSo1IaNGN6txSVlxvVqOSpZaZrRvVlHrMikq3G9SWmX1apA1VEeplakUT5ozUYal3UgH5pM03NJmgB2aTNJmkzQAGmmlNNNMQ01Gxp5qNqAGMaiY1I1RNQBG1RtUhqM0CImqNhUxFMIpiIGFMIqcrTCKAK5FNIqYimEUCISKYRUxFRkUwISKYRUxFMIpkkJFMIqUimEVRJHSU8im0xCUUUUAFFFLQAlLRRQA+kpaSgAooooAKKKKACkpaKAEopaKAEooooASilooASiiigApKWigBKKKKACiiigAooooAWikpaAFopKWgBaKSigBaKKKAFopKKAFopKKAFooooAcDT1NRU4GgCyjVYjeqStUqNSKTNKOSrcclZcb1ajkqWWmakclTq9ZsclWUkqSky8GpwaqqvUgakUT7qM1EGpQaQEmaM0zNLmgB1NNLSGmIaajapDUbUARtUZqVqjIoAiIphFSkU0igRERTCKmIppFAEJFMIqYimEUAQMKjIqdhUbCgRCRUZFTEUwimBCRTGFTEUwimSQMKjIqdhUbCmhMhIppqUimEVRIyilopiEoopaAEpaKKAHUUUUAJRRRQAlFFFABRRRQAtFJRQAUUUUAFFFFABSUtJQAUUUUAJRRRQAUUUUAFFFFABRRRQAtFJRQAtLSUUALRSUtAC0UlFAC0UlLQAUUUUALRSUtADgakVqhFOBoGWkarCPVFWqVXqRpmjHJVlJKzEerCSUmi0zSSSples9JKnR6mxSZdDVIDVVWqZTSHcmBpwqNTTxQA6koooAQ0w08000ARkUwipSKYRQBERTSKlIphFAEZFNIqQ0w0ARkUxhUhphoEREVGwqY1GRQIiIphFSkUwigCIimEVMRTCKYEJFRsKnYVGwpolkDCoyKnYVGRVEsiIptPIpppiEopaSgQUUtFMB1JS0UAJSUtFACUlLRQAlFFFABRRSUALRSUUALSUUUAFFFFABRRRQAlFFFABRRRQAUUUUAFFFFABRRRQAUUUUALRSUUALRRRQAtFJRQAtFFFAC0UlFAC0oNJRQA8GnhqiBpwNAywr1Mj1TDVKrUh3L6PViN6zkerEb1NikzSR6sI1Z8b1bjapKuXFNSCq6NUymkMkpaQUUABpppxpppDGmmmnGmmgBhppp5phoAYaYaeaYaYDDTDTzTDQIYaYRTzTTQBGRTSKkNNIoEREU0ipSKaRQBCRTGFTEUxhTEV2FRMKsMKiYU0SyAimkVKwqMiqJGUUppKYgooooAdRSUUwCiiigBKKKKAEooooAKSlooASiiigAooooAKKKKACiikoAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigApaSigBaKSigBaWkooAWlpKKAFpc02loAcDTwaipwNICdWqwj1TVqlRqCjRjercT1mRtVuJ6ljTNKNqsIaoxtVpGqS0WQaXNRqaeDSGLSGikpAIaaacaaaBjTTTTjTTQAw1GakNMNAEZppp5p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') center center / cover no-repeat fixed;
+  }
   body {
-    background: #ffffff; color: #222;
+    background: rgba(255, 255, 255, 0.85); color: #222;
     font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     min-height: 100dvh; display: flex; flex-direction: column;
     overscroll-behavior: none;
@@ -31,6 +35,20 @@
     text-align: center; font-weight: 700; color: #333;
     font-size: clamp(20px, 3.6vw, 28px); line-height: 1.45;
     min-height: 2.6em; word-break: break-word;
+  }
+  /* Khung scramble kiểu đèn LED PC: viền đổi màu liên tục. */
+  .scramble-frame {
+    border: 3px solid #ff5252; border-radius: 16px; padding: 6px 12px;
+    animation: ledCycle 6s linear infinite;
+  }
+  @keyframes ledCycle {
+    0% { border-color: #ff5252; box-shadow: 0 0 10px rgba(255,82,82,0.35); }
+    17% { border-color: #ffab00; box-shadow: 0 0 10px rgba(255,171,0,0.35); }
+    33% { border-color: #ffee58; box-shadow: 0 0 10px rgba(255,238,88,0.35); }
+    50% { border-color: #69f0ae; box-shadow: 0 0 10px rgba(105,240,174,0.35); }
+    67% { border-color: #40c4ff; box-shadow: 0 0 10px rgba(64,196,255,0.35); }
+    83% { border-color: #e040fb; box-shadow: 0 0 10px rgba(224,64,251,0.35); }
+    100% { border-color: #ff5252; box-shadow: 0 0 10px rgba(255,82,82,0.35); }
   }
   #timer-zone {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -74,6 +92,16 @@
 
   /* ---- Trang Lịch sử ---- */
   #history-view { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; }
+  .history-head { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  #btn-select-mode.active { background: #fdecea; border-color: #f5c6c6; color: #c62828; }
+  /* Khung mục tiêu ngày + hướng dẫn sub-10 ở đầu trang Lịch sử. */
+  .goal-box { background: #f9f9f9; border: 1px solid #eee; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+  .goal-box-head { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .guide-content { margin-top: 10px; font-size: 14px; line-height: 1.55; }
+  .guide-content h4 { margin: 14px 0 4px; font-size: 15px; }
+  .guide-content p { margin: 4px 0; }
+  .guide-content ul { margin: 4px 0; padding-left: 20px; }
+  .guide-content a { color: #1565c0; }
   #history-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .solve-row {
     position: relative; background: #fff; border: 1px solid #eee; border-radius: 16px;
@@ -113,6 +141,21 @@
   label.check input { width: 18px; height: 18px; }
   .note { color: #888; font-size: 14px; }
 
+  /* ---- Khung chúc mừng / nhắc mục tiêu ngày: nền đen chữ trắng, phủ gần kín màn hình ---- */
+  .goal-overlay {
+    position: fixed; inset: 16px; z-index: 20;
+    background: #111; color: #fff; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .goal-overlay .goal-close {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none; color: #fff; font-size: 22px; padding: 6px 10px;
+  }
+  .goal-overlay .goal-emoji { font-size: 48px; }
+  .goal-overlay .goal-title { font-size: 24px; font-weight: 700; margin: 8px 0; }
+  .goal-overlay .goal-sub { font-size: 16px; line-height: 1.5; color: #ddd; }
+
   @media (max-width: 760px) {
     .solve-row .time { font-size: 19px; }
     .stats-row { padding: 10px 16px 6px; }
@@ -134,7 +177,7 @@
 
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
-  <div class="scramble-wrap hide-while-running"><div id="scramble" class="scramble"></div></div>
+  <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div></div>
   <div id="record-box" class="record-box"><div class="rb-title"></div><div class="rb-sub"></div></div>
   <div id="timer-zone">
     <div id="clock" class="clock">0:00.00</div>
@@ -146,6 +189,90 @@
 <!-- ================= TRANG LỊCH SỬ ================= -->
 <div id="history-view" class="hidden">
   <button id="btn-delete-selected" class="hidden">🗑️ Xóa lượt giải</button>
+  <div class="history-head"><button id="btn-select-mode">Chọn để xóa</button></div>
+  <div class="goal-box">
+    <div class="goal-box-head">🎯 Mục tiêu hôm nay: <span id="goal-status"></span></div>
+    <button id="btn-guide">📖 Cách luyện xuống sub-10</button>
+    <div id="guide-content" class="guide-content hidden"><h4>1. Lộ trình: từ sub-13 xuống sub-10 cần gì</h4>
+<p>Ở mức sub-13/sub-14, tay bạn đã đủ nhanh — vấn đề không còn là xoay nhanh hơn mà là dừng ít hơn. Một lượt giải sub-10 chuẩn thường chia thế này: Cross 1–1,5 giây, F2L 5–5,5 giây, OLL 1,5–2 giây, PLL 1,5–2 giây. So với hiện tại, phần lớn 3 giây cần rút nằm ở F2L và ở các khoảng dừng giữa các bước, chứ không nằm ở tốc độ xoay. Thứ tự ưu tiên: (1) lookahead F2L, (2) cross + cặp đầu tiên, (3) học nốt full PLL rồi full OLL, (4) nhận diện trường hợp nhanh hơn.</p>
+
+<h4>2. F2L: lookahead là tất cả</h4>
+<p>F2L chiếm khoảng một nửa thời gian giải, nên đây là nơi rút được nhiều nhất. Nguyên tắc: mắt luôn nhìn cặp tiếp theo, tay giải cặp hiện tại bằng trí nhớ cơ bắp.</p>
+<ul>
+<li><strong>Slow solves:</strong> giải thật chậm (khoảng 1 nước/giây), chậm tới mức không bao giờ phải dừng. Khi đã giải chậm mà không pause được, tăng tốc dần. Có thể dùng metronome để giữ nhịp đều. Đây là bài tập lookahead chuẩn nhất.</li>
+<li><strong>Không nhìn cặp đang giải:</strong> tập nhìn một cặp rồi nhắm mắt giải nó, để tay tự nhớ đường đi và mắt rảnh rang tìm cặp tiếp theo.</li>
+<li><strong>Học đủ 41 case F2L chuẩn:</strong> giải trực giác thường tốn 2–3 nước thừa mỗi cặp. Đối chiếu cách giải của mình với bảng F2L chuẩn, ưu tiên cách không cần xoay cube (rotationless).</li>
+<li><strong>Giải vào slot sau, dùng cả tay trái:</strong> cặp ở phía sau thì giải luôn tại chỗ thay vì xoay cube ra trước; tập chèn cặp bằng tay trái để khỏi bị kẹt ở 2-gen (chỉ dùng R và U).</li>
+<li><strong>Chọn cặp khôn ngoan:</strong> đừng làm cặp đầu tiên thấy được — liếc nhanh xem cặp nào đã gần ghép xong hoặc chèn được không cần xoay.</li>
+<li><strong>Edge control:</strong> cách chèn cặp cuối cùng quyết định bạn gặp OLL nào. Chèn bằng sledgehammer (R' F R F') thay vì sexy move có thể tránh được các case OLL chấm (dot case) vừa dài vừa khó.</li>
+</ul>
+
+<h4>3. Cross và Cross+1</h4>
+<p>Cross luôn giải được trong 8 nước trở xuống, ở mặt dưới. Dùng 15 giây inspection để lên kế hoạch toàn bộ cross trước khi bấm giờ, rồi trong lúc xoay cross thì mắt đã tìm cặp F2L đầu tiên. Nhiều cuber trên diễn đàn SpeedSolving nói cross+1 chính là điểm khác biệt giữa sub-10 và không sub-10: nếu chưa track được cả cặp, ít nhất hãy track 1 góc của cặp đầu tiên.</p>
+<ul>
+<li>Luyện cross không bấm giờ: xem scramble, nhẩm cách giải cross ngắn nhất, rồi nhắm mắt xoay thử.</li>
+<li>Sau khi cross xong là F2L bắt đầu ngay — không có khoảng dừng để "tìm cặp đầu tiên".</li>
+</ul>
+
+<h4>4. Full PLL trước, rồi full OLL</h4>
+<p>Nếu chưa thuộc hết, học full PLL (21 công thức) trước vì ít case hơn và mỗi case xuất hiện thường xuyên; sau đó mới tới full OLL (57 công thức).</p>
+<ul>
+<li>Mỗi ngày học 1–2 công thức mới, ôn lại công thức cũ bằng PLL time attack (bấm giờ từng alg, mục tiêu dưới 2 giây mỗi alg).</li>
+<li>Chia công thức thành từng cụm (trigger) như R U R' U' để nhớ, đừng học thuộc lòng từng nước rời rạc.</li>
+<li>Học finger trick chuẩn ngay từ đầu — sửa thói quen tay sai sau này tốn gấp nhiều lần thời gian học.</li>
+<li>Bỏ qua các case OLL có dấu chấm (dot case) lúc mới học vì hiếm gặp và dài; học sau cùng.</li>
+<li>Luyện nhận diện PLL từ 2 mặt (two-sided recognition) để khỏi phải xoay cube trước khi nhận case.</li>
+</ul>
+
+<h4>5. Finger trick, TPS và cách cầm cube</h4>
+<p>Một nghiên cứu phân tích 69 lượt giải (Boyce &amp; Storm, 2022) cho thấy: người giải 20 giây để cube đứng yên tới 46% thời gian, còn người giải 10 giây chỉ dừng khoảng 33% — trong khi tốc độ tay lúc đang xoay chỉ chênh nhau khoảng 22% (7,16 so với 9,21 nước/giây). Nghĩa là giảm pause và giảm đổi grip hiệu quả hơn hẳn so với cố xoay nhanh hơn. Người giải 20 giây đổi grip trung bình 23 lần mỗi lượt, người 10 giây chỉ khoảng 11 lần.</p>
+<ul>
+<li>U2 bằng double flick (ngón trỏ + ngón giữa), R/R' bằng cổ tay, giữ ngón cái cố định làm trục.</li>
+<li>Luyện finger trick theo 3 giai đoạn: cầm đúng → nối nhiều bước không nhấc ngón cái → trộn công thức rồi mới tăng tốc.</li>
+<li>Không cần TPS siêu cao: người giải 10 giây xoay trung bình khoảng 9 nước/giây. Tốc độ đó là đủ nếu bạn không pause.</li>
+</ul>
+
+<h4>6. Lịch luyện mỗi ngày (45–60 phút)</h4>
+<ul>
+<li><strong>10 phút:</strong> slow solves — 3–5 lượt giải chậm, không bấm giờ, chỉ tập lookahead.</li>
+<li><strong>10 phút:</strong> học/ôn công thức — 1–2 alg mới + time attack các alg đã học.</li>
+<li><strong>20–25 phút:</strong> timed solves — khoảng 20–30 lượt, mỗi buổi chỉ tập trung sửa 1 điểm yếu (ví dụ hôm nay chỉ chú ý cross+1).</li>
+<li><strong>5–10 phút:</strong> drill điểm yếu nhất — cross bịt mắt, F2L 2-gen, hoặc nhận diện PLL.</li>
+<li><strong>Quan trọng nhất:</strong> luyện có mục đích (deliberate practice). Giải bừa 100 lượt mà không sửa gì thì gần như không tiến bộ — tìm điểm yếu, sửa nó, rồi mới tăng tốc.</li>
+</ul>
+
+<h4>7. Lỗi thường gặp khiến kẹt ở sub-13</h4>
+<ul>
+<li>Xoay nhanh nhưng pause nhiều: tốc độ tay cao mà cứ dừng tìm cặp thì vẫn chậm.</li>
+<li>Chỉ giải timed, không bao giờ drill: timed solves đo trình độ, drill mới nâng trình độ.</li>
+<li>Học alg mới nhưng không luyện recognition: biết công thức mà nhận case chậm 1 giây thì coi như chưa biết.</li>
+<li>Cross không lên kế hoạch hết trong inspection, vừa xoay vừa nghĩ.</li>
+<li>Xoay cube (rotation) quá nhiều trong F2L thay vì học cách giải rotationless.</li>
+<li>Đổi cube liên tục, đổ lỗi cho cube thay vì cho kỹ năng.</li>
+<li>So sánh single may mắn thay vì nhìn Ao100 — average mới là trình độ thật.</li>
+</ul>
+
+<h4>8. Mốc thời gian thực tế</h4>
+<p>Sub-10 là một rào cản khó — cộng đồng SpeedSolving khuyên đừng đặt deadline cứng vì nó đến khi nó đến. Với nền sub-13 và luyện đều 30–60 phút mỗi ngày, đa số cuber mất khoảng vài tháng đến hơn 1 năm để xuống sub-10, tùy vào việc đã thuộc full OLL/PLL chưa và lookahead hiện tại tới đâu. Đừng sốt ruột nếu có tuần không tiến bộ: plateau vài tuần là bình thường, đó thường là dấu hiệu cần đổi bài tập chứ không phải dấu hiệu hết khả năng. Đo tiến bộ bằng Ao100 theo tuần, không phải bằng single.</p>
+
+<h4>Nguồn tham khảo</h4>
+<p>Tổng hợp từ các video và bài viết sau (bấm để mở):</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=pPjfgn73od8" target="_blank">Video: How to be Sub-10 (no-nonsense guide) — YouTube</a></li>
+<li><a href="https://jperm.net/3x3/cfop" target="_blank">J Perm — CFOP Speedsolving Method (jperm.net)</a></li>
+<li><a href="https://www.cubelelo.com/blogs/cubing/ultimate-guide-to-be-sub-10" target="_blank">Cubelelo — The Ultimate Guide To Be Sub-10</a></li>
+<li><a href="https://www.cubelelo.com/blogs/cubing/advanced-solving-methods-unlocking-speedcubing-secrets" target="_blank">Cubelelo — Advanced Solving Methods: Unlocking Speedcubing Secrets</a></li>
+<li><a href="https://www.cubeathon.com/guides/how-to-get-faster" target="_blank">Cubeathon — How to Get Faster: From Sub-60 to Sub-10</a></li>
+<li><a href="https://www.thecubicle.com/en-fi/blogs/thecubicle-blogs/how-to-improve-at-speedcubing" target="_blank">TheCubicle — How to Improve at Speedcubing?</a></li>
+<li><a href="https://www.speedsolving.com/threads/how-can-i-get-sub-x-on-3x3.53368/page-3" target="_blank">SpeedSolving — How can I get sub x on 3x3? (bàn luận sub-10, cross+1)</a></li>
+<li><a href="https://www.speedsolving.com/threads/how-do-you-actually-get-better-at-cubing-what-practice-methods.96449/" target="_blank">SpeedSolving — How do you actually get better at cubing? (phương pháp luyện tập)</a></li>
+<li><a href="https://solvethecube.com/speedcubing" target="_blank">SolveTheCube — Speedcubing Guide (CFOP)</a></li>
+<li><a href="https://www.youtube.com/watch?v=Ic6pbdoyiU0" target="_blank">Video tiếng Việt: Luyện finger trick Rubik thế nào để xoay nhanh hơn mà tay khỏi dừng? — YouTube (Mind Factory)</a></li>
+<li><a href="https://xaydungso.vn/blog/su-that-bat-ngo-ve-cach-giai-rubik-3x3-duoi-10-giay-chi-voi-nhung-bi-kip-don-gian-vi-cb.html" target="_blank">Bài tiếng Việt: Cách Giải Rubik 3x3 Dưới 10 Giây — xaydungso.vn</a></li>
+<li><a href="https://www.youtube.com/shorts/h2v5v0ybWt0" target="_blank">Short: Secret Front Move F2L Trick (rotationless F2L) — YouTube (BrainCube)</a></li>
+</ul>
+</div>
+  </div>
   <div id="history-list"></div>
 </div>
 
@@ -184,6 +311,16 @@
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= KHUNG CHÚC MỪNG / NHẮC MỤC TIÊU NGÀY ================= -->
+<div id="goal-overlay" class="goal-overlay hidden">
+  <button class="goal-close" id="goal-close">✕</button>
+  <div>
+    <div class="goal-emoji" id="goal-emoji">🎉</div>
+    <div class="goal-title" id="goal-title">Chúc mừng!</div>
+    <div class="goal-sub" id="goal-sub"></div>
   </div>
 </div>
 
@@ -300,6 +437,10 @@ function fmtAverageResult(r) {
 // - plus2: đã cộng 2 giây hay chưa.
 const LS_SOLVES = 'cubetimer.solves.v1';
 const LS_SETTINGS = 'cubetimer.settings.v1';
+const LS_DAILY = 'cubetimer.daily_goal.v1';
+// Mục tiêu ngày: 5 lần liên tiếp dưới 13s.
+const DAILY_GOAL_TARGET = 13;
+const DAILY_GOAL_STREAK = 5;
 
 function validSolve(s) {
   return s && typeof s.id === 'string' && typeof s.scramble === 'string' &&
@@ -328,15 +469,40 @@ function loadSettings() {
 function saveSettings() {
   try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {}
 }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function loadDaily() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_DAILY) || '{}');
+    if (d.date === todayStr()) return { date: d.date, done: !!d.done, reminded: !!d.reminded };
+  } catch (e) {}
+  return { date: todayStr(), done: false, reminded: false };
+}
+function saveDaily() {
+  try { localStorage.setItem(LS_DAILY, JSON.stringify(daily)); } catch (e) {}
+}
+// Sang ngày mới thì reset mục tiêu ngày (khi app mở xuyên đêm).
+function refreshDaily() {
+  if (daily.date !== todayStr()) {
+    daily = { date: todayStr(), done: false, reminded: false };
+    saveDaily();
+  }
+}
 
 const $ = function (sel) { return document.querySelector(sel); };
 function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
 let solves = loadSolves();
 let settings = loadSettings();
+let daily = loadDaily();
 let currentView = 'timer'; // 'timer' | 'history'
 let detailSolveId = null;
-let selectedSolveId = null; // id lượt đang chọn để xóa (nhấn giữ trong Lịch sử)
+// Chế độ chọn để xóa trong Lịch sử: bấm nút "Chọn để xóa" rồi nhấn giữ
+// 0.3s vào thẻ để chọn/bỏ chọn (chọn được nhiều lượt).
+let selectMode = false;
+let selectedIds = new Set();
 
 // Trạng thái bấm giờ: 'idle' | 'inspecting' | 'running'
 // Luồng chạm: nhả tay = inspection 15s, nhả tiếp = bắt đầu giải, nhả = dừng.
@@ -449,6 +615,44 @@ function stopSolve() {
   stopLoop();
   renderTimer();
   if (record) showRecordBox(record);
+  checkDailyGoal();
+}
+
+// --- Mục tiêu ngày: 5 lần liên tiếp dưới 13s ---
+let goalOverlayTimer = null;
+function showGoalOverlay(emoji, title, subHtml) {
+  $('#goal-emoji').textContent = emoji;
+  $('#goal-title').textContent = title;
+  $('#goal-sub').innerHTML = subHtml;
+  $('#goal-overlay').classList.remove('hidden');
+  if (goalOverlayTimer) clearTimeout(goalOverlayTimer);
+  goalOverlayTimer = setTimeout(hideGoalOverlay, 5000); // tự đóng sau 5s
+}
+function hideGoalOverlay() {
+  $('#goal-overlay').classList.add('hidden');
+  if (goalOverlayTimer) { clearTimeout(goalOverlayTimer); goalOverlayTimer = null; }
+}
+// Sau mỗi lượt giải: đủ 5 lần liên tiếp dưới 13s trong ngày thì chúc mừng 1 lần.
+function checkDailyGoal() {
+  refreshDaily();
+  if (daily.done) return;
+  if (streakCount(DAILY_GOAL_TARGET) >= DAILY_GOAL_STREAK) {
+    daily.done = true;
+    saveDaily();
+    showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>5 lần liên tiếp dưới 13s');
+  }
+}
+// 23h59 đêm: chưa hoàn thành mục tiêu trong ngày thì nhắc 1 lần
+// (chỉ nhắc khi app đang mở).
+function checkNightReminder() {
+  refreshDaily();
+  if (daily.done || daily.reminded) return;
+  const now = new Date();
+  if (now.getHours() === 23 && now.getMinutes() === 59) {
+    daily.reminded = true;
+    saveDaily();
+    showGoalOverlay('⏰', 'Sắp hết ngày!', 'Hôm nay chưa hoàn thành mục tiêu:<br>5 lần liên tiếp dưới 13s');
+  }
 }
 
 // --- Câu chat khi phá kỉ lục (tốt nhất / tệ nhất) ---
@@ -526,12 +730,11 @@ function hideRecordBox() {
 }
 
 // Quá 17s nhìn trước (quên bấm giờ): KHÔNG ghi lượt DNF nữa, tự bỏ lượt
-// này luôn rồi đổi scramble mới, khỏi phải vào Lịch sử xóa tay.
+// này luôn rồi đổi scramble mới, không hiện thông báo gì thêm.
 function recordInspectionDnf() {
   currentScramble = generateScramble();
   phase = 'idle';
   stopLoop();
-  setStatus('Quên bấm giờ - đã tự bỏ lượt này');
   renderTimer();
 }
 
@@ -558,8 +761,16 @@ function beep() {
 }
 
 // Rung cảnh báo khi nhìn trước còn 7s / 3s (giây thứ 8 và 12).
-// Cần quyền VIBRATE trong AndroidManifest; trình duyệt không hỗ trợ thì bỏ qua.
+// Ưu tiên cầu native của app (navigator.vibrate không ăn trên một số máy),
+// không có thì dùng navigator.vibrate.
 function vibrate(pattern) {
+  try {
+    if (window.AndroidVibrate && window.AndroidVibrate.vibrate) {
+      const arr = Array.isArray(pattern) ? pattern : [pattern];
+      window.AndroidVibrate.vibrate(JSON.stringify(arr));
+      return;
+    }
+  } catch (e) {}
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
 }
 
@@ -601,18 +812,23 @@ function updateClock() {
 
 // Hàng thống kê dưới màn hình Timer: bảng Ao3/5/15/50/100 (cột Hiện tại và
 // Tốt nhất), dưới cùng là số lượt đã giải.
+// Số lượt liên tiếp dưới mốc t (giây), tính từ lượt mới nhất trở về
+// trước (tối đa 5). Gặp lượt quá mốc hoặc DNF là chuỗi đứt.
+function streakCount(t) {
+  let n = 0;
+  for (let i = solves.length - 1; i >= 0 && n < 5; i--) {
+    const s = solves[i];
+    if (s.time === null || s.time >= t * 1000) break;
+    n++;
+  }
+  return n;
+}
+
 // Đếm chuỗi liên tiếp dưới mỗi mốc sub, tính từ lượt mới nhất trở về
-// trước (tối đa 5): "13/2" = 2 lượt gần nhất đều dưới 13s. Gặp lượt quá
-// mốc hoặc DNF là chuỗi đứt ngay, đếm lại từ 0.
+// trước (tối đa 5): "13/2" = 2 lượt gần nhất đều dưới 13s.
 function subGoalsHTML() {
   return SUB_TARGETS.map(function (t) {
-    let n = 0;
-    for (let i = solves.length - 1; i >= 0 && n < 5; i--) {
-      const s = solves[i];
-      if (s.time === null || s.time >= t * 1000) break;
-      n++;
-    }
-    return t + '/' + n;
+    return t + '/' + streakCount(t);
   }).join('<br>');
 }
 
@@ -661,7 +877,8 @@ function escapeHtml(s) {
 
 function modalOpen() {
   return !$('#detail-modal').classList.contains('hidden') ||
-    !$('#settings-modal').classList.contains('hidden');
+    !$('#settings-modal').classList.contains('hidden') ||
+    !$('#goal-overlay').classList.contains('hidden');
 }
 function inputFocused() {
   const el = document.activeElement;
@@ -689,9 +906,19 @@ function showTimer() {
   renderTimer();
 }
 
+function renderGoalStatus() {
+  refreshDaily();
+  const el = $('#goal-status');
+  if (daily.done) {
+    el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới 13s)';
+  } else {
+    el.textContent = '⏳ Chuỗi dưới 13s hiện tại: ' + streakCount(DAILY_GOAL_TARGET) + '/5';
+  }
+}
+
 function renderHistory() {
-  selectedSolveId = null;
-  $('#btn-delete-selected').classList.add('hidden');
+  exitSelectMode();
+  renderGoalStatus();
   const list = $('#history-list');
   if (solves.length === 0) {
     list.innerHTML = '<div class="empty-msg">Chưa có lượt giải nào.</div>';
@@ -753,6 +980,7 @@ document.addEventListener('pointerup', function (e) {
   // Đang chạy giờ: nhả tay ở BẤT CỨ đâu cũng dừng — kể cả khi tay trượt
   // hay chạm trúng nút (lúc chạy các nút đã ẩn, nhưng tay đập mạnh hay trượt).
   if (phase === 'running') { handleTap(); return; }
+  if (modalOpen()) return; // khung chúc mừng / modal đang mở: chạm không làm gì
   if (e.target.closest('button, a, input, select, textarea, label')) return;
   if (performance.now() - lastSwipeAt < 150) return; // vừa lướt xong
   handleTap();
@@ -783,7 +1011,7 @@ document.addEventListener('touchend', function (e) {
 }, { passive: true });
 
 window.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { closeDetail(); closeSettings(); return; }
+  if (e.key === 'Escape') { closeDetail(); closeSettings(); hideGoalOverlay(); return; }
   if (inputFocused() || modalOpen()) return;
   if (currentView !== 'timer') return;
   if (e.repeat) return;
@@ -817,32 +1045,50 @@ $('#set-beep').addEventListener('change', function (e) {
 });
 $('#history-list').addEventListener('click', function (e) {
   if (lpFired) { lpFired = false; return; } // vừa nhấn giữ xong, đừng mở chi tiết
-  if (selectedSolveId !== null) { clearSelection(); return; } // bấm chỗ khác thì bỏ chọn
+  if (selectMode) return; // chế độ chọn: chỉ nhấn giữ mới chọn, bấm thường không làm gì
   const row = e.target.closest('.solve-row');
   if (row) openDetail(row.dataset.id);
 });
 
-// Nhấn giữ vào thẻ lượt giải để chọn, hiện bong bóng "Xóa lượt giải" ở góc
-// trên-trái màn hình; bấm vào bong bóng để xóa lượt đã chọn.
+// Chế độ chọn để xóa: bấm nút "Chọn để xóa", rồi nhấn giữ 0.3s vào thẻ để
+// chọn/bỏ chọn (chọn được nhiều lượt). Bong bóng "Xóa (n)" hiện ở góc
+// trên-trái màn hình; bấm vào để xóa các lượt đã chọn (có hỏi xác nhận).
 let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
-function clearSelection() {
-  selectedSolveId = null;
+function updateDeleteBubble() {
+  const btn = $('#btn-delete-selected');
+  if (selectedIds.size === 0) { btn.classList.add('hidden'); return; }
+  btn.textContent = '🗑️ Xóa ' + selectedIds.size + ' lượt';
+  btn.classList.remove('hidden');
+}
+function exitSelectMode() {
+  selectMode = false;
+  selectedIds.clear();
   document.querySelectorAll('.solve-row.selected').forEach(function (r) { r.classList.remove('selected'); });
   $('#btn-delete-selected').classList.add('hidden');
+  const btn = $('#btn-select-mode');
+  btn.textContent = 'Chọn để xóa';
+  btn.classList.remove('active');
 }
 function clearLpTimer() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
+$('#btn-select-mode').addEventListener('click', function () {
+  if (selectMode) { exitSelectMode(); return; }
+  selectMode = true;
+  this.textContent = 'Hủy chọn';
+  this.classList.add('active');
+});
 $('#history-list').addEventListener('pointerdown', function (e) {
   lpFired = false; // lần chạm mới thì reset cờ nhấn giữ
+  if (!selectMode) return;
   const row = e.target.closest('.solve-row');
   if (!row) return;
   lpX = e.clientX; lpY = e.clientY;
   lpTimer = setTimeout(function () {
     lpFired = true;
-    clearSelection();
-    selectedSolveId = row.dataset.id;
-    row.classList.add('selected');
-    $('#btn-delete-selected').classList.remove('hidden');
-  }, 500);
+    const id = row.dataset.id;
+    if (selectedIds.has(id)) { selectedIds.delete(id); row.classList.remove('selected'); }
+    else { selectedIds.add(id); row.classList.add('selected'); }
+    updateDeleteBubble();
+  }, 300);
 });
 $('#history-list').addEventListener('pointermove', function (e) {
   if (lpTimer && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) clearLpTimer();
@@ -851,13 +1097,20 @@ $('#history-list').addEventListener('pointerup', clearLpTimer);
 $('#history-list').addEventListener('pointercancel', clearLpTimer);
 $('#history-list').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 $('#btn-delete-selected').addEventListener('click', function () {
-  if (selectedSolveId === null) return;
-  if (!confirm('Xóa lượt giải này?')) { clearSelection(); return; }
-  solves = solves.filter(function (x) { return x.id !== selectedSolveId; });
+  if (selectedIds.size === 0) return;
+  const n = selectedIds.size;
+  if (!confirm('Xóa ' + n + ' lượt giải đã chọn?')) return;
+  solves = solves.filter(function (x) { return !selectedIds.has(x.id); });
   saveSolves();
   renderHistory();
   renderTimer();
 });
+$('#btn-guide').addEventListener('click', function () {
+  const g = $('#guide-content');
+  g.classList.toggle('hidden');
+  this.textContent = g.classList.contains('hidden') ? '📖 Cách luyện xuống sub-10' : '📖 Ẩn hướng dẫn';
+});
+$('#goal-close').addEventListener('click', hideGoalOverlay);
 $('#detail-close').addEventListener('click', closeDetail);
 $('#detail-save').addEventListener('click', function () {
   const s = solves.find(function (x) { return x.id === detailSolveId; });
@@ -897,6 +1150,9 @@ document.querySelectorAll('.modal').forEach(function (m) {
 $('#set-inspection').checked = settings.inspection;
 $('#set-beep').checked = settings.beep;
 renderTimer();
+// Nhắc mục tiêu ngày lúc 23h59 (kiểm tra mỗi 20s, chỉ nhắc khi app đang mở).
+setInterval(checkNightReminder, 20000);
+checkNightReminder();
 </script>
 </body>
 </html>

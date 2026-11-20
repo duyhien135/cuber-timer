@@ -45,6 +45,8 @@
   .scramble-hint { text-align: center; font-size: 12px; color: #999; margin-top: 4px; }
   /* Nội dung panel gợi ý cross + F2L (v3.4). */
   .hint-sec { margin: 12px 0; font-size: 15px; line-height: 1.5; }
+  .hint-orient { margin: 12px 0; padding: 10px 12px; background: #fff8e1; border: 2px solid #f5b301; border-radius: 8px; font-size: 16px; line-height: 1.7; }
+  .front-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25); vertical-align: -1px; margin: 0 2px; }
   .hint-alg { font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 17px; margin-top: 4px; word-break: break-word; }
   .hint-alt { font-size: 14px; color: #555; margin-top: 4px; }
   @keyframes ledCycle {
@@ -2413,7 +2415,7 @@ function renderRecog() {
 }
 
 /* =====================================================================
-   PHẦN 5C: GỢI Ý CROSS + CẶP F2L (v3.4) — tính trong Web Worker
+   PHẦN 5C: GỢI Ý CROSS + CẶP F2L (v3.5) — tính trong Web Worker
    ===================================================================== */
 // HINT_WORKER_SRC: mã nguồn Worker = cube-sim/simulator.js +
 // cube-sim/solver.js + cầu nối onmessage. Được chèn nguyên văn bằng script
@@ -2610,16 +2612,38 @@ function stateToFacelets(s) {
   return f;
 }
 
-// solver.js — Gợi ý cross + cặp F2L cho Cube Timer v3.4.
+// solver.js — Gợi ý cross + cặp F2L cho Cube Timer v3.5.
 // JS thuần, không dependency, không import/export — dán thẳng vào index.html
 // (Worker Blob) được. Phụ thuộc simulator.js (MOVE_TABLES, solvedState,
 // applyAlg, cloneState).
 // QUY ƯỚC VIẾT: KHÔNG dùng backtick hay dãy đô-la + ngoặc nhọn mở
 // trong file này, để nhúng nguyên văn vào template literal trong index.html.
 //
-// Cross trắng ở mặt dưới (D): 4 cạnh DR, DF, DL, DB (cubie 4-7) đúng vị
-// trí + đúng hướng. Bảng khoảng cách BFS: 11880 hoán vị vị trí x 16 hướng
-// = 190080 trạng thái; lời giải tối ưu tối đa 8 bước HTM.
+// KHUNG A = khung xáo chuẩn WCA: trắng U, xanh lá F, đỏ R, xanh dương B,
+// cam L, vàng D. KHUNG B_k = khung gợi ý: lật trắng xuống D (vàng lên U)
+// rồi xoay k lần quanh trục đứng (k = 0..3, mặt trước lần lượt xanh lá,
+// cam, xanh dương, đỏ). Để có trạng thái trong khung B_k: đổi nhãn mặt
+// của scramble theo phép xoay σ_k rồi áp lên cube đã giải; solver cross +
+// cặp chạy không đổi trên trạng thái đó. Lời giải trả về theo khung B_k —
+// người dùng cầm cube trắng dưới, mặt trước như ghi, áp đúng như in ra.
+// (v3.4 tính thẳng trên scramble gốc, tức giả định lúc xáo trắng ở DƯỚI,
+// nên với xáo chuẩn WCA thì gợi ý "cross trắng" thực ra giải cross VÀNG.)
+//
+// LƯU Ý: 4 khung B_k chỉ khác nhau ở phép xoay cả cube nên độ dài cross
+// tối ưu là NHƯ NHAU ở cả 4 mặt trước — "cross ngắn nhất" không phân biệt
+// được mặt nào. Việc chọn mặt trước thực chất dựa vào, theo thứ tự:
+// số nước B+D NHỎ NHẤT trên mọi lời giải cross tối ưu của mặt đó, rồi
+// số nước L NHỎ NHẤT (độ dài cố định nên ít L = nhiều R/U/F — kiểu
+// nước người dùng quen tay nhất), rồi thứ tự cố định xanh lá, cam,
+// xanh dương, đỏ khi hoà. B và D khó xoay như nhau nên không phân biệt.
+// solveCrossFromIndex vì vậy liệt kê TẤT CẢ lời giải tối ưu (DFS theo
+// bảng BFS, chỉ đi nước làm giảm khoảng cách đúng 1) rồi chọn lời giải
+// chính theo (số nước B+D, rồi số nước L, rồi thứ tự tìm được đầu tiên).
+//
+// Cross trắng ở mặt dưới (D) trong khung B: 4 cạnh DR, DF, DL, DB
+// (cubie 4-7) đúng vị trí + đúng hướng. Bảng khoảng cách BFS: 11880 hoán
+// vị vị trí x 16 hướng = 190080 trạng thái; lời giải tối ưu tối đa 8
+// bước HTM.
 // Cặp F2L: IDA* trên state đầy đủ, heuristic = max(khoảng cách cặp
 // góc-cạnh (bảng 24x24, bỏ qua cross), khoảng cách cross) — admissible
 // vì lời giải vừa phải lắp cặp vừa phải giữ cross. Mục tiêu: cặp vào đúng
@@ -2756,48 +2780,68 @@ function buildCrossTable() {
   return dist;
 }
 
-// Giải cross tối ưu bằng cách đi xuống theo bảng khoảng cách.
-// Trả { moves, len, alts } — alts là tối đa 2 lời giải khác cùng độ dài
-// (đi từ các nước đầu khác nhau mà vẫn giảm khoảng cách).
+// Liệt kê TẤT CẢ lời giải cross tối ưu bằng DFS theo bảng khoảng cách
+// (chỉ đi các nước làm giảm khoảng cách đúng 1; sâu = khoảng cách tối
+// ưu ≤ 8 — điều kiện giảm nghiêm ngặt đã loại nước thừa/quay lui).
+// Chọn lời giải chính = nhỏ nhất theo (số nước B+D, rồi số nước L,
+// rồi thứ tự tìm được đầu tiên); alts = 2 lời giải khác tiếp theo theo
+// cùng thứ tự. (B và D đều khó xoay như nhau với người dùng nên không
+// phân biệt B với D; ít L nghĩa là nhiều R/U/F vì độ dài cố định.) Số lời giải tối ưu mỗi trạng thái chỉ vài nghìn là cùng;
+// chặn an toàn 50000 đường để DFS không chạy quá lâu trong trường hợp
+// xấu (chưa từng chạm tới trong kiểm chứng).
+// Trả { moves, len, alts }.
+var CROSS_ENUM_CAP = 50000;
 function solveCrossFromIndex(idx) {
   var dist = buildCrossTable();
   var d = dist[idx];
   if (d === 0) return { moves: [], len: 0, alts: [] };
-  var cur = { pos: [0, 0, 0, 0], ori: [0, 0, 0, 0] };
-  var np = [0, 0, 0, 0], no = [0, 0, 0, 0];
-  var firsts = [];
-  decodeCrossIndex(idx, cur);
-  for (var t = 0; t < 18; t++) {
-    applyCrossMove(cur.pos, cur.ori, SOLVER_TOKENS[t], np, no);
-    if (dist[crossIndex(np, no)] === d - 1) firsts.push(SOLVER_TOKENS[t]);
-  }
-  function complete(first) {
-    var seq = [first];
-    decodeCrossIndex(idx, cur);
-    applyCrossMove(cur.pos, cur.ori, first, np, no);
-    var ci = crossIndex(np, no);
-    while (dist[ci] > 0) {
-      decodeCrossIndex(ci, cur);
-      var dd = dist[ci];
-      var done = false;
-      for (var t2 = 0; t2 < 18; t2++) {
-        applyCrossMove(cur.pos, cur.ori, SOLVER_TOKENS[t2], np, no);
-        if (dist[crossIndex(np, no)] === dd - 1) {
-          seq.push(SOLVER_TOKENS[t2]);
-          ci = crossIndex(np, no);
-          done = true;
-          break;
-        }
+  var solutions = [];
+  var seq = [];
+  function dfs(ci, depth) {
+    if (solutions.length >= CROSS_ENUM_CAP) return;
+    if (depth === 0) { solutions.push(seq.slice()); return; }
+    // Mảng cục bộ theo từng khung đệ quy — KHÔNG dùng mảng chia sẻ
+    // (đệ quy sẽ ghi đè cur/np/no của khung cha).
+    var curP = [0, 0, 0, 0], curO = [0, 0, 0, 0];
+    decodeCrossIndex(ci, { pos: curP, ori: curO });
+    var np = [0, 0, 0, 0], no = [0, 0, 0, 0];
+    for (var t = 0; t < 18; t++) {
+      applyCrossMove(curP, curO, SOLVER_TOKENS[t], np, no);
+      var nidx = crossIndex(np, no);
+      if (dist[nidx] === depth - 1) {
+        seq.push(SOLVER_TOKENS[t]);
+        dfs(nidx, depth - 1);
+        seq.pop();
+        if (solutions.length >= CROSS_ENUM_CAP) return;
       }
-      if (!done) break; // không xảy ra nếu bảng đúng
     }
-    return seq;
   }
-  var main = complete(firsts[0]);
+  dfs(idx, d);
+  function countFace(moves, face) {
+    var n = 0;
+    for (var i = 0; i < moves.length; i++) if (moves[i].charAt(0) === face) n++;
+    return n;
+  }
+  // Chấm điểm kèm chỉ số gốc để thứ tự hoà là xác định (không dựa vào
+  // tính ổn định của sort). Tiêu chí "dễ thao tác" theo người dùng:
+  // B và D đều khó xoay như nhau -> ít B+D nhất; hòa thì ít L nhất
+  // (độ dài cố định nên ít L = nhiều R/U/F nhất); hòa nữa thì lấy
+  // thứ tự tìm được đầu tiên.
+  var scored = [];
+  for (var i = 0; i < solutions.length; i++) {
+    var mv = solutions[i];
+    scored.push({ mv: mv, db: countFace(mv, 'D') + countFace(mv, 'B'), lc: countFace(mv, 'L'), i: i });
+  }
+  scored.sort(function (a, b) {
+    if (a.db !== b.db) return a.db - b.db;
+    if (a.lc !== b.lc) return a.lc - b.lc;
+    return a.i - b.i;
+  });
+  var main = scored[0].mv;
+  var mainKey = main.join(' ');
   var alts = [];
-  for (var i = 1; i < firsts.length && alts.length < 2; i++) {
-    var alt = complete(firsts[i]);
-    if (alt.join(' ') !== main.join(' ')) alts.push(alt);
+  for (var j = 1; j < scored.length && alts.length < 2; j++) {
+    if (scored[j].mv.join(' ') !== mainKey) alts.push(scored[j].mv);
   }
   return { moves: main, len: main.length, alts: alts };
 }
@@ -2959,8 +3003,60 @@ function solveF2LPair(state) {
 }
 
 // ---------- API chính ----------
-// scramble: chuỗi 20 nước kiểu WCA. Trả:
-// { cross: { moves, len, alts }, pair: { slot, moves, len } | null }
+// 4 phép đổi nhãn σ_k (mặt trong khung A -> mặt trong khung B_k).
+// Cả 4 đều là xoay 180° nên tự nghịch đảo (σ_k^-1 = σ_k) — dùng để dịch
+// lời giải ngược về khung A khi kiểm chứng đầu-cuối.
+var FRONT_FACES = [
+  { name: 'xanh lá', map: { U: 'D', D: 'U', F: 'F', B: 'B', R: 'L', L: 'R' } },
+  { name: 'cam', map: { U: 'D', D: 'U', F: 'L', B: 'R', R: 'B', L: 'F' } },
+  { name: 'xanh dương', map: { U: 'D', D: 'U', F: 'B', B: 'F', R: 'R', L: 'L' } },
+  { name: 'đỏ', map: { U: 'D', D: 'U', F: 'R', B: 'L', R: 'F', L: 'B' } }
+];
+
+// Đổi nhãn mặt của từng nước trong alg theo map, giữ nguyên hậu tố ' và 2.
+function relabelAlg(alg, map) {
+  var toks = alg.trim().split(/\\s+/);
+  var out = [];
+  for (var i = 0; i < toks.length; i++) {
+    if (!toks[i]) continue;
+    out.push(map[toks[i].charAt(0)] + toks[i].slice(1));
+  }
+  return out.join(' ');
+}
+
+// Số nước D và B trong lời giải — 2 mặt khó xoay nhất, dùng làm tiêu
+// chí phụ khi chọn mặt trước (ít D/B hơn thì dễ thao tác hơn).
+function countDB(moves) {
+  var n = 0;
+  for (var i = 0; i < moves.length; i++) {
+    var f = moves[i].charAt(0);
+    if (f === 'D' || f === 'B') n++;
+  }
+  return n;
+}
+// Số nước L trong lời giải — tiêu chí phụ thứ 2 khi chọn mặt trước
+// (độ dài cố định nên ít L = nhiều R/U/F, kiểu nước dễ thao tác nhất).
+function countL(moves) {
+  var n = 0;
+  for (var i = 0; i < moves.length; i++) if (moves[i].charAt(0) === 'L') n++;
+  return n;
+}
+
+// scramble: chuỗi 20 nước kiểu WCA (xáo chuẩn: trắng trên, xanh lá
+// trước). Thử cả 4 mặt trước (trắng dưới) và chọn mặt tốt nhất theo:
+//   1. cross ngắn nhất (HTM) — trên thực tế độ dài tối ưu NHƯ NHAU ở
+//      cả 4 mặt (chỉ xoay cả cube), nên tiêu chí này không phân biệt;
+//   2. ít nước B+D nhất TRÊN MỌI lời giải cross tối ưu của mặt đó
+//      (solveCrossFromIndex đã chọn lời giải chính có B+D nhỏ nhất thật,
+//      nên countDB(lời giải chính) = giá trị nhỏ nhất của mặt);
+//   3. hòa thì ít nước L nhất (độ dài cố định nên ít L = nhiều R/U/F,
+//      kiểu nước người dùng quen tay nhất);
+//   4. hòa nữa thì thứ tự cố định xanh lá, cam, xanh dương, đỏ
+//      (vòng lặp k = 0..3 với so sánh < chặt nên k nhỏ nhất thắng).
+// Trả: { front, frontIndex, cross: { moves, len, alts },
+//        pair: { slot, moves, len } | null }
+// Lời giải theo khung B_k đã chọn: người dùng lật trắng dưới, mặt trước
+// đúng màu ghi, áp đúng như in ra.
 var tablesReady = false;
 function ensureTables() {
   if (tablesReady) return;
@@ -2970,12 +3066,25 @@ function ensureTables() {
 }
 function solveHints(scramble) {
   ensureTables();
-  var s0 = applyAlg(solvedState(), scramble);
-  var cross = solveCross(s0);
-  var s1 = cross.moves.length ? applyAlg(s0, cross.moves.join(' ')) : s0;
+  var best = null;
+  for (var k = 0; k < 4; k++) {
+    var relabeled = relabelAlg(scramble, FRONT_FACES[k].map);
+    var s0 = applyAlg(solvedState(), relabeled);
+    var cross = solveCross(s0);
+    var db = countDB(cross.moves);
+    var lc = countL(cross.moves);
+    if (!best || cross.len < best.cross.len ||
+        (cross.len === best.cross.len && (db < best.db ||
+        (db === best.db && lc < best.lc)))) {
+      best = { k: k, s0: s0, cross: cross, db: db, lc: lc };
+    }
+  }
+  var s1 = best.cross.moves.length ? applyAlg(best.s0, best.cross.moves.join(' ')) : best.s0;
   var pair = solveF2LPair(s1);
   return {
-    cross: { moves: cross.moves, len: cross.len, alts: cross.alts },
+    front: FRONT_FACES[best.k].name,
+    frontIndex: best.k,
+    cross: { moves: best.cross.moves, len: best.cross.len, alts: best.cross.alts },
     pair: pair ? { slot: pair.slot, moves: pair.moves, len: pair.len } : null
   };
 }
@@ -2986,7 +3095,7 @@ self.onmessage = function (e) {
   if (d.type !== 'solve' || typeof d.scramble !== 'string') return;
   try {
     var r = solveHints(d.scramble);
-    self.postMessage({ type: 'result', id: d.id, scramble: d.scramble, cross: r.cross, pair: r.pair });
+    self.postMessage({ type: 'result', id: d.id, scramble: d.scramble, front: r.front, frontIndex: r.frontIndex, cross: r.cross, pair: r.pair });
   } catch (err) {
     self.postMessage({ type: 'error', id: d.id, scramble: d.scramble, message: String((err && err.message) || err) });
   }
@@ -2995,7 +3104,7 @@ self.onmessage = function (e) {
 
 let hintWorker = null;
 let hintReqId = 0;
-let hintCache = {}; // scramble -> { cross, pair }
+let hintCache = {}; // scramble -> { front, frontIndex, cross, pair }
 let hintCurrentScramble = null;
 
 function getHintWorker() {
@@ -3006,7 +3115,7 @@ function getHintWorker() {
     hintWorker.onmessage = function (e) {
       var d = e.data || {};
       if (d.type === 'result') {
-        hintCache[d.scramble] = { cross: d.cross, pair: d.pair };
+        hintCache[d.scramble] = { front: d.front, frontIndex: d.frontIndex, cross: d.cross, pair: d.pair };
         if (hintCurrentScramble === d.scramble && !$('#hint-modal').classList.contains('hidden')) {
           renderHintBody(d.scramble);
         }
@@ -3059,6 +3168,12 @@ function renderHintBody(scramble) {
     return;
   }
   var c = cached.cross;
+  // v3.5: hướng cầm cube — lật trắng dưới, mặt trước đã chọn (ghi rõ màu
+  // + ô màu). Phải hiện NỔI BẬT TRƯỚC lời giải cross, vì lời giải chỉ
+  // đúng khi cầm đúng hướng này.
+  var frontName = cached.front || 'xanh lá';
+  var frontColor = { 'xanh lá': '#2e9e4f', 'cam': '#f58220', 'xanh dương': '#2563eb', 'đỏ': '#e53935' }[frontName] || '#2e9e4f';
+  html += '<div class="hint-orient">🔄 Lật cube: <b>trắng dưới, vàng trên</b><br>Mặt trước: <span class="front-swatch" style="background:' + frontColor + '"></span> <b>' + escapeHtml(frontName) + '</b></div>';
   if (c.len === 0) {
     html += '<div class="hint-sec"><b>➕ Cross trắng:</b> đã xong sẵn, không cần xoay.</div>';
   } else {
@@ -3076,7 +3191,7 @@ function renderHintBody(scramble) {
   } else {
     html += '<div class="hint-sec"><b>🧩 Cặp F2L tiếp theo — slot ' + escapeHtml(p.slot) + ' (' + p.len + ' bước):</b><div class="hint-alg">' + escapeHtml(p.moves.join(' ')) + '</div></div>';
   }
-  html += '<p class="note">Gợi ý tính từ scramble hiện tại, cross trắng ở mặt dưới. Đóng panel rồi bấm giờ như bình thường.</p>';
+  html += '<p class="note">Gợi ý tính từ scramble hiện tại. Mặt trước được chọn để cross dễ xoay nhất (ít nước B/D, nhiều nước R/U/F). Đóng panel rồi bấm giờ như bình thường.</p>';
   $('#hint-body').innerHTML = html;
 }
 

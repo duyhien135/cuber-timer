@@ -171,12 +171,41 @@
     .stats-row { padding: 6px 20px 4px; }
     #timer-view { padding-bottom: 64px; }
   }
+  /* ---- Chế độ tập (Full / F2L / OLL / PLL) ---- */
+  .mode-chips { display: flex; gap: 8px; justify-content: center; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0; flex-wrap: wrap; }
+  .mode-chips button { padding: 7px 14px; font-size: 14px; border-radius: 999px; }
+  .mode-chips button.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+  .toggle-row { display: flex; gap: 8px; justify-content: center; padding: 4px 16px 8px; flex-wrap: wrap; }
+  .toggle-row button { padding: 7px 12px; font-size: 13px; border-radius: 999px; }
+  .toggle-row button.on { background: #e8f5e9; border-color: #2e7d32; color: #2e7d32; font-weight: 700; }
+  .solve-row .flag { position: absolute; top: 4px; right: 8px; font-size: 13px; }
+  .solve-row.flagged { border-color: #ffcc80; }
+  .streak-line { font-size: 14px; margin-bottom: 8px; color: #555; }
+  .split-line { font-size: 12px; color: #555; margin-top: 4px; text-align: right; line-height: 1.5; }
+  /* ---- Màn hình Nhận diện PLL ---- */
+  #recog-view { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; text-align: center; }
+  .recog-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .recog-sub { font-size: 14px; color: #888; margin-bottom: 16px; }
+  .cube-net { display: inline-block; margin: 8px auto 16px; }
+  .cube-net .net-row { display: flex; justify-content: center; }
+  .cube-net .st { width: 34px; height: 34px; margin: 1.5px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.15); }
+  .cube-net .st.blank { background: transparent !important; border-color: transparent; }
+  .recog-clock { font-family: 'SF Mono', Consolas, monospace; font-size: 44px; font-weight: 700; margin: 8px 0; }
+  .recog-answer { font-size: 20px; font-weight: 700; min-height: 1.4em; margin: 8px 0; }
+  .recog-answer small { display: block; font-size: 13px; color: #888; font-weight: 400; margin-top: 2px; }
+  .recog-stats { font-size: 14px; color: #555; margin-top: 12px; line-height: 1.6; }
+  .recog-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .recog-btns button.big { padding: 14px 22px; font-size: 17px; font-weight: 700; }
+  .summary-line { margin: 6px 0; font-size: 15px; line-height: 1.5; }
+  .summary-line b { font-family: 'SF Mono', Consolas, monospace; }
+  label.check input[type=number] { width: 70px; padding: 6px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; }
 </style>
 </head>
 <body>
 
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
+  <div id="mode-chips" class="mode-chips hide-while-running"></div>
   <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div></div>
   <div id="record-box" class="record-box"><div class="rb-title"></div><div class="rb-sub"></div></div>
   <div id="timer-zone">
@@ -184,14 +213,21 @@
     <div id="status" class="status"></div>
   </div>
   <section id="stats-row" class="stats-row hide-while-running"></section>
+  <div class="toggle-row hide-while-running">
+    <button id="btn-split-toggle">✂️ Tách bước: Tắt</button>
+    <button id="btn-metro-toggle">🥁 Metronome: Tắt</button>
+  </div>
 </div>
 
 <!-- ================= TRANG LỊCH SỬ ================= -->
 <div id="history-view" class="hidden">
   <button id="btn-delete-selected" class="hidden">🗑️ Xóa lượt giải</button>
   <div class="history-head"><button id="btn-select-mode">Chọn để xóa</button></div>
+  <div id="mode-chips-history" class="mode-chips" style="padding:0 0 10px"></div>
   <div class="goal-box">
     <div class="goal-box-head">🎯 Mục tiêu hôm nay: <span id="goal-status"></span></div>
+    <div id="streak-line" class="streak-line"></div>
+    <button id="btn-summary">📊 Tổng kết buổi tập</button>
     <button id="btn-guide">📖 Cách luyện xuống sub-10</button>
     <div id="guide-content" class="guide-content hidden"><h4>1. Lộ trình: từ sub-13 xuống sub-10 cần gì</h4>
 <p>Ở mức sub-13/sub-14, tay bạn đã đủ nhanh — vấn đề không còn là xoay nhanh hơn mà là dừng ít hơn. Một lượt giải sub-10 chuẩn thường chia thế này: Cross 1–1,5 giây, F2L 5–5,5 giây, OLL 1,5–2 giây, PLL 1,5–2 giây. So với hiện tại, phần lớn 3 giây cần rút nằm ở F2L và ở các khoảng dừng giữa các bước, chứ không nằm ở tốc độ xoay. Thứ tự ưu tiên: (1) lookahead F2L, (2) cross + cặp đầu tiên, (3) học nốt full PLL rồi full OLL, (4) nhận diện trường hợp nhanh hơn.</p>
@@ -276,10 +312,26 @@
   <div id="history-list"></div>
 </div>
 
+<!-- ================= MÀN HÌNH NHẬN DIỆN PLL ================= -->
+<div id="recog-view" class="hidden">
+  <div class="recog-title">🧩 Nhận diện PLL</div>
+  <div class="recog-sub">Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.</div>
+  <div id="recog-net" class="cube-net"></div>
+  <div id="recog-clock" class="recog-clock">0.00</div>
+  <div id="recog-answer" class="recog-answer"></div>
+  <div class="recog-btns">
+    <button id="btn-recog-new" class="primary big">Case mới</button>
+    <button id="btn-recog-gotit" class="big" disabled>Nhận ra rồi!</button>
+  </div>
+  <div id="recog-stats" class="recog-stats"></div>
+</div>
+
 <!-- ================= THANH ĐIỀU HƯỚNG DƯỚI ================= -->
 <nav class="bottomnav hide-while-running">
   <button id="nav-timer" class="active">⏱<small>Timer</small></button>
+  <button id="nav-recog">🧩<small>Nhận diện</small></button>
   <button id="nav-history">☰<small>Lịch sử</small></button>
+  <button id="nav-settings">⚙️<small>Cài đặt</small></button>
 </nav>
 
 <!-- ================= MODAL CHI TIẾT LƯỢT GIẢI ================= -->
@@ -307,6 +359,9 @@
     <h3>Cài đặt</h3>
     <label class="check"><input type="checkbox" id="set-inspection" checked> Inspection 15 giây (chuẩn WCA)</label>
     <label class="check"><input type="checkbox" id="set-beep" checked> Âm báo ở giây thứ 8 và 12 khi nhìn trước</label>
+    <label class="check"><input type="checkbox" id="set-split"> Tách bước khi giải (chạm để tách F2L / LL)</label>
+    <label class="check"><input type="checkbox" id="set-metro"> Metronome nhịp tay khi giải</label>
+    <label class="check">Nhịp metronome: <input type="number" id="set-bpm" min="60" max="240" step="5" value="120"> BPM</label>
     <p class="note">Chạm hoặc nhấn giữ 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp thật nhanh: hoàn tác lượt vừa giải và về scramble đó.</p>
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
@@ -324,8 +379,252 @@
   </div>
 </div>
 
+<!-- ================= MODAL TỔNG KẾT BUỔI TẬP ================= -->
+<div id="summary-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>📊 Tổng kết buổi tập</h3>
+    <div id="summary-body"></div>
+    <div class="modal-row">
+      <button id="summary-close" class="primary">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
+/* =====================================================================
+   PHẦN 0: MÔ PHỎNG KHỐI (được chèn từ cube-sim/simulator.js +
+   cube-sim/alg-tables.js (21 PLL + 8 trigger OLL, đã kiểm chứng):
+   solvedState, applyAlg, invertAlg, stateToFacelets). */
+// Cube Timer — mô phỏng khối Rubik 3x3 (mô hình cubie, quy ước Kociemba).
+// JS thuần, không dependency, không import/export — dán thẳng vào index.html được.
+//
+// Góc:  0=URF 1=UFL 2=ULB 3=UBR 4=DFR 5=DLF 6=DBL 7=DRB
+// Cạnh: 0=UR 1=UF 2=UL 3=UB 4=DR 5=DF 6=DL 7=DB 8=FR 9=FL 10=BL 11=BR
+// state = { cp:[8], co:[8], ep:[12], eo:[12] }
+//   cp[i] = góc nào đang ở vị trí i; co[i] = hướng của góc đó (0..2)
+//   ep[j] = cạnh nào đang ở vị trí j; eo[j] = hướng của cạnh đó (0..1)
+
+// Trạng thái solved.
+function solvedState() {
+  return {
+    cp: [0, 1, 2, 3, 4, 5, 6, 7],
+    co: [0, 0, 0, 0, 0, 0, 0, 0],
+    ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  };
+}
+
+// Bảng nước cơ bản (Kociemba). Khi áp nước:
+//   new_cp[i] = old_cp[cp[i]]; new_co[i] = (old_co[cp[i]] + co[i]) % 3
+//   new_ep[j] = old_ep[ep[j]]; new_eo[j] = (old_eo[ep[j]] + eo[j]) % 2
+// M: lớp giữa, cùng chiều với L — chỉ xáo 4 cạnh giữa (UF, UB, DF, DB)
+// và lật hướng chúng; góc không đổi.
+const MOVE_TABLES = {
+  U: { cp: [3, 0, 1, 2, 4, 5, 6, 7], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  R: { cp: [4, 1, 2, 0, 7, 5, 6, 3], co: [2, 0, 0, 1, 1, 0, 0, 2],
+       ep: [8, 1, 2, 3, 11, 5, 6, 7, 4, 9, 10, 0], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  F: { cp: [1, 5, 2, 3, 0, 4, 6, 7], co: [1, 2, 0, 0, 2, 1, 0, 0],
+       ep: [0, 9, 2, 3, 4, 8, 6, 7, 1, 5, 10, 11], eo: [0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0] },
+  D: { cp: [0, 1, 2, 3, 5, 6, 7, 4], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [0, 1, 2, 3, 5, 6, 7, 4, 8, 9, 10, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  L: { cp: [0, 2, 6, 3, 4, 1, 5, 7], co: [0, 1, 2, 0, 0, 2, 1, 0],
+       ep: [0, 1, 10, 3, 4, 5, 9, 7, 8, 2, 6, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  B: { cp: [0, 1, 3, 7, 4, 5, 2, 6], co: [0, 0, 1, 2, 0, 0, 2, 1],
+       ep: [0, 1, 2, 11, 4, 5, 6, 10, 8, 9, 3, 7], eo: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1] },
+  M: { cp: [0, 1, 2, 3, 4, 5, 6, 7], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [0, 3, 2, 7, 4, 1, 6, 5, 8, 9, 10, 11], eo: [0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0] }
+};
+
+function cloneState(s) {
+  return { cp: s.cp.slice(), co: s.co.slice(), ep: s.ep.slice(), eo: s.eo.slice() };
+}
+
+// Áp 1 nước cơ bản (không hậu tố) lên state. Mutate state truyền vào.
+function applyBaseMove(s, face) {
+  const t = MOVE_TABLES[face];
+  const cp = [], co = [], ep = [], eo = [];
+  for (let i = 0; i < 8; i++) {
+    cp[i] = s.cp[t.cp[i]];
+    co[i] = (s.co[t.cp[i]] + t.co[i]) % 3;
+  }
+  for (let j = 0; j < 12; j++) {
+    ep[j] = s.ep[t.ep[j]];
+    eo[j] = (s.eo[t.ep[j]] + t.eo[j]) % 2;
+  }
+  s.cp = cp; s.co = co; s.ep = ep; s.eo = eo;
+  return s;
+}
+
+// Áp 1 token nước, vd "R", "R'", "R2". Hậu tố '' = 1 lần, '2' = 2 lần, "'" = 3 lần.
+function applyMoveToken(s, token) {
+  const face = token.charAt(0);
+  const suffix = token.slice(1);
+  const times = suffix === '2' ? 2 : suffix === "'" ? 3 : 1;
+  for (let k = 0; k < times; k++) applyBaseMove(s, face);
+  return s;
+}
+
+// Áp chuỗi nước cách nhau bằng khoảng trắng. KHÔNG mutate state gốc, trả state mới.
+function applyAlg(state, alg) {
+  const s = cloneState(state);
+  const tokens = alg.trim().split(/\s+/);
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i]) applyMoveToken(s, tokens[i]);
+  }
+  return s;
+}
+
+// Đảo ngược alg: đảo thứ tự + đảo từng nước (X <-> X', X2 giữ nguyên).
+function invertAlg(alg) {
+  const tokens = alg.trim().split(/\s+/).filter(Boolean);
+  const out = [];
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const t = tokens[i];
+    const suffix = t.slice(1);
+    if (suffix === "'") out.push(t.charAt(0));
+    else if (suffix === '2') out.push(t);
+    else out.push(t + "'");
+  }
+  return out.join(' ');
+}
+
+function isSolved(s) {
+  for (let i = 0; i < 8; i++) if (s.cp[i] !== i || s.co[i] !== 0) return false;
+  for (let j = 0; j < 12; j++) if (s.ep[j] !== j || s.eo[j] !== 0) return false;
+  return true;
+}
+
+// F2L nguyên vẹn: góc tầng D (4-7) và cạnh tầng D + tầng giữa (4-11)
+// đều đúng vị trí và đúng hướng.
+function isF2LIntact(s) {
+  for (let i = 4; i < 8; i++) if (s.cp[i] !== i || s.co[i] !== 0) return false;
+  for (let j = 4; j < 12; j++) if (s.ep[j] !== j || s.eo[j] !== 0) return false;
+  return true;
+}
+
+// Chỉ hoán vị tầng cuối (trường hợp PLL): F2L nguyên vẹn, mọi mảnh tầng cuối
+// đúng hướng, và state khác solved (tức tầng cuối thực sự bị hoán vị).
+function isLLPermutationOnly(s) {
+  if (!isF2LIntact(s)) return false;
+  for (let i = 0; i < 4; i++) if (s.co[i] !== 0 || s.eo[i] !== 0) return false;
+  return !isSolved(s);
+}
+
+// Chỉ sai hướng tầng cuối (trường hợp OLL thuần): F2L nguyên vẹn, mọi mảnh
+// đúng vị trí, và có hướng tầng cuối bị sai.
+function isLLOrientationOnly(s) {
+  if (!isF2LIntact(s)) return false;
+  for (let i = 0; i < 8; i++) if (s.cp[i] !== i) return false;
+  for (let j = 0; j < 12; j++) if (s.ep[j] !== j) return false;
+  for (let k = 0; k < 4; k++) if (s.co[k] !== 0 || s.eo[k] !== 0) return true;
+  return false;
+}
+
+// --- Chuyển state sang 54 mặt (facelets) để vẽ hình khối ---
+// Thứ tự mặt: U 0-8, R 9-17, F 18-26, D 27-35, L 36-44, B 45-53.
+// Màu: U=W (trắng), R=R (đỏ), F=G (xanh lá), D=Y (vàng), L=O (cam), B=B (xanh dương).
+const CORNER_FACELET = [[8, 9, 20], [6, 18, 38], [0, 36, 47], [2, 45, 11],
+                        [29, 26, 15], [27, 44, 24], [33, 53, 42], [35, 17, 51]];
+const EDGE_FACELET = [[5, 10], [7, 19], [3, 37], [1, 46], [32, 16], [28, 25],
+                      [30, 43], [34, 52], [23, 12], [21, 41], [48, 39], [50, 14]];
+// Màu của từng cubie theo chỉ số mặt: 0=U, 1=R, 2=F, 3=D, 4=L, 5=B.
+const CORNER_COLOR = [[0, 1, 2], [0, 2, 4], [0, 4, 5], [0, 5, 1],
+                      [3, 2, 1], [3, 4, 2], [3, 5, 4], [3, 1, 5]];
+const EDGE_COLOR = [[0, 1], [0, 2], [0, 4], [0, 5], [3, 1], [3, 2],
+                    [3, 4], [3, 5], [2, 1], [2, 4], [5, 4], [5, 1]];
+const FACE_CHARS = ['W', 'R', 'G', 'Y', 'O', 'B'];
+
+function stateToFacelets(s) {
+  const f = new Array(54);
+  // 6 mặt trung tâm không nằm trong mô hình cubie — tô màu của mặt đó.
+  // (U=4, R=13, F=22, D=31, L=40, B=49.)
+  f[4] = 'W'; f[13] = 'R'; f[22] = 'G'; f[31] = 'Y'; f[40] = 'O'; f[49] = 'B';
+  for (let i = 0; i < 8; i++) {
+    const cubie = s.cp[i], ori = s.co[i];
+    for (let n = 0; n < 3; n++) {
+      f[CORNER_FACELET[i][(n + ori) % 3]] = FACE_CHARS[CORNER_COLOR[cubie][n]];
+    }
+  }
+  for (let j = 0; j < 12; j++) {
+    const cubie = s.ep[j], ori = s.eo[j];
+    for (let m = 0; m < 2; m++) {
+      f[EDGE_FACELET[j][(m + ori) % 2]] = FACE_CHARS[EDGE_COLOR[cubie][m]];
+    }
+  }
+  return f;
+}
+
+// Cube Timer — bảng thuật toán PLL và trigger OLL.
+// JS thuần, không dependency, không import/export — dán thẳng vào index.html được.
+// Mọi alg trong PLL_ALGS đã được kiểm chứng bằng test.js:
+//   áp vào solved phải cho isLLPermutationOnly = true,
+//   21 trạng thái kết quả khác nhau từng đôi một,
+//   áp nghịch đảo rồi áp alg (và ngược lại) phải về solved.
+// Scramble theo bước = invertAlg(alg): xáo khối từ solved về đúng case đó.
+
+// 21 case PLL — đã kiểm chứng đủ cả 21 bằng test.js:
+//   áp vào solved phải cho isLLPermutationOnly = true,
+//   21 trạng thái kết quả khác nhau từng đôi một,
+//   áp nghịch đảo rồi áp alg (và ngược lại) phải về solved.
+// Scramble theo bước = invertAlg(alg): xáo khối từ solved về đúng case đó.
+// Lưu ý E: bản nhớ từ trí nhớ "R U' R' D ..." thiếu cặp xoay x'...x nên sai
+// (xáo cả F2L). Bản dưới đây là alg E chuẩn x' A x, với phép xoay khối triển
+// khai thành nước mặt: x = R M' L', x' = L M R' (đã kiểm chứng x^4 = identity).
+const PLL_ALGS = {
+  Aa: "R' U L' U2 R U' R' U2 R L",
+  Ab: "R U' L U2 R' U R U2 R' L'",
+  E: "L M R' R U' R' D R U R' D' R U R' D R U' R' D' R M' L'",
+  F: "R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R",
+  Ga: "R2 U R' U R' U' R U' R2 U' D R' U R D'",
+  Gb: "R' U' R U D' R2 U R' U R U' R U' R2 D",
+  Gc: "R2 U' R U' R U R' U R2 U D' R U' R' D",
+  Gd: "R U R' U' D R2 U' R U' R' U R' U R2 D'",
+  H: "M2 U M2 U2 M2 U M2",
+  Ja: "L' U' L F L' U' L U L F' L2 U L",
+  Jb: "R U R' F' R U R' U' R' F R2 U' R'",
+  Na: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
+  Nb: "R' U R U' R' F' U' F R U R' F R' F' R U' R",
+  Ra: "R U' R' U' R U R D R' U' R D' R' U2 R'",
+  Rb: "R2 F R U R U' R' F' R U2 R' U2 R",
+  T: "R U R' U' R' F R2 U' R' U' R U R' F'",
+  Ua: "R U' R U R U R U' R' U' R2",
+  Ub: "R2 U R U R' U' R' U' R' U R'",
+  V: "R' U R' U' R D' R' D R' U D' R2 U' R2 D R2",
+  Y: "F R U' R' U' R U R' F' R U R' U' R' F R F'",
+  Z: "M2 U M2 U M' U2 M2 U2 M' U2"
+};
+
+// E perm: 2 ứng viên nhớ từ trí nhớ — CẢ 2 ĐỀU SAI, đã loại (giữ lại đây
+// để khỏi thử lại; test.js khóa lại bằng test phủ định).
+//   E1: thiếu cặp xoay x'...x nên đổi góc URF<->DFR, UFL<->DLF (xáo F2L).
+//   E2: xáo cả góc tầng D lẫn cạnh tầng giữa, không phải PLL nào cả.
+const E_CANDIDATES = {
+  E1: "R U' R' D R U R' D' R U R' D R U' R' D'",
+  E2: "R2 U R' U' R' U R' U' R' U R' U R2 U' R' U R'"
+};
+
+// Trigger OLL: dùng làm scramble tập định hướng tầng cuối (áp nghịch đảo vào solved).
+// Tiêu chí: giữ nguyên F2L + làm sai hướng tầng cuối. Đã kiểm chứng: cả 8 trigger
+// đều giữ F2L và làm sai hướng tầng cuối, NHƯNG cả 8 ngoài định hướng còn hoán vị
+// tầng cuối (isLLOrientationOnly = false) — vẫn dùng được cho scramble tập OLL,
+// vì khi tập OLL thì hoán vị tầng cuối không quan trọng (PLL sửa sau).
+const OLL_TRIGGERS = {
+  Sune: "R U R' U R U2 R'",
+  Antisune: "R U2 R' U' R U' R'",
+  H: "R U R' U R U' R' U R U2 R'",
+  Pi: "R U2 R2 U' R2 U' R2 U2 R",
+  T: "R U R' U' R' F R F'",
+  OLL45: "F U R U' R' F'",
+  OLL44: "F R U R' U' F'",
+  OLL2: "R U2 R' U' R U R' U' R U' R'"
+};
+
+// Chuẩn hoá bảng alg (object map) về dạng mảng cho app dùng.
+const PLL_LIST = Object.keys(PLL_ALGS).map(function (n) { return { name: n, alg: PLL_ALGS[n] }; });
+const OLL_LIST = Object.keys(OLL_TRIGGERS).map(function (n) { return OLL_TRIGGERS[n]; });
+
 /* =====================================================================
    PHẦN 1: HÀM THUẦN (không chạm DOM) - scramble, trung bình, định dạng.
    Các hàm này có thể kiểm tra độc lập bằng node.
@@ -349,6 +648,54 @@ function generateScramble(len) {
     prev = face;
   }
   return moves.join(' ');
+}
+
+// --- Chế độ tập: Full (giải cả khối), F2L (chỉ cross+F2L),
+// --- OLL / PLL (scramble chỉ xáo tầng cuối, tập riêng 1 bước).
+const MODES = [
+  { id: 'full', name: 'Full' },
+  { id: 'f2l', name: 'F2L' },
+  { id: 'oll', name: 'OLL' },
+  { id: 'pll', name: 'PLL' },
+];
+function modeName(mode) {
+  for (let i = 0; i < MODES.length; i++) if (MODES[i].id === mode) return MODES[i].name;
+  return 'Full';
+}
+// Case của scramble hiện tại (chế độ PLL): tên case, để lưu vào lượt giải.
+let currentStageCase = null;
+// Scramble OLL: 1-2 trigger ngẫu nhiên, mỗi trigger giữ nguyên 2 tầng đầu
+// (chỉ xáo hướng tầng cuối). Không đều case như dùng đủ 57 alg, nhưng đủ tập.
+function generateOLLScramble() {
+  if (typeof OLL_LIST === 'undefined' || !OLL_LIST.length) return generateScramble();
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const n = Math.random() < 0.5 ? 1 : 2;
+    const parts = [];
+    for (let i = 0; i < n; i++) parts.push(OLL_LIST[Math.floor(Math.random() * OLL_LIST.length)]);
+    const scr = parts.join(' ');
+    // 2 trigger có thể triệt tiêu nhau (vd Sune + Antisune = solved) — kiểm tra
+    // bằng mô phỏng, nếu ra solved thì xáo lại.
+    if (typeof applyAlg === 'undefined' || !isSolved(applyAlg(solvedState(), scr))) {
+      currentStageCase = null;
+      return scr;
+    }
+  }
+  currentStageCase = null;
+  return OLL_LIST[Math.floor(Math.random() * OLL_LIST.length)];
+}
+// Scramble PLL: nghịch đảo của 1 alg PLL ngẫu nhiên — áp vào khối đã giải
+// sẽ ra đúng case đó, rồi giải bằng alg gốc.
+function generatePLLScramble() {
+  if (typeof PLL_LIST === 'undefined' || !PLL_LIST.length || typeof invertAlg === 'undefined') return generateScramble();
+  const entry = PLL_LIST[Math.floor(Math.random() * PLL_LIST.length)];
+  currentStageCase = entry.name;
+  return invertAlg(entry.alg);
+}
+function generateScrambleFor(mode) {
+  if (mode === 'oll') return generateOLLScramble();
+  if (mode === 'pll') return generatePLLScramble();
+  currentStageCase = null;
+  return generateScramble();
 }
 
 // --- Số lượt bị bỏ ở mỗi đầu khi tính trung bình (chuẩn WCA / csTimer):
@@ -425,22 +772,66 @@ function fmtAverageResult(r) {
   return fmtAvg(r.value);
 }
 
+function meanOf(nums) {
+  if (!nums.length) return null;
+  let sum = 0;
+  for (let i = 0; i < nums.length; i++) sum += nums[i];
+  return sum / nums.length;
+}
+function stddevOf(nums) {
+  if (nums.length < 2) return null;
+  const m = meanOf(nums);
+  let s = 0;
+  for (let i = 0; i < nums.length; i++) s += (nums[i] - m) * (nums[i] - m);
+  return Math.sqrt(s / nums.length);
+}
+// Số lần liên tiếp gần nhất mà max-min <= band (ms): thử thách độ đều.
+function consistencyCount(times, band) {
+  let mn = Infinity, mx = -Infinity, n = 0;
+  for (let i = times.length - 1; i >= 0; i--) {
+    const t = times[i];
+    if (t === null || t === undefined) break;
+    if (t < mn) mn = t;
+    if (t > mx) mx = t;
+    if (mx - mn > band) break;
+    n++;
+  }
+  return n;
+}
+
 /* __PURE_END__ */
 
 /* =====================================================================
    PHẦN 2: DỮ LIỆU (localStorage) VÀ TRẠNG THÁI
    ===================================================================== */
 
-// Một lượt giải: { id, raw, time, plus2, scramble, date, note }
+// Một lượt giải: { id, raw, time, plus2, scramble, date, note, mode, splits, case }
 // - raw: thời gian đo được (ms, đã cắt về 0.01s), null nếu DNF do quá giờ nhìn.
 // - time: thời gian cuối cùng sau phạt (null = DNF).
 // - plus2: đã cộng 2 giây hay chưa.
+// - mode: 'full' | 'f2l' | 'oll' | 'pll' (mặc định 'full' với lượt cũ).
+// - splits: { f2l, pause, ll } (ms) khi bật Tách bước, null nếu không tách.
+// - case: tên case PLL (chế độ PLL) hoặc null.
 const LS_SOLVES = 'cubetimer.solves.v1';
 const LS_SETTINGS = 'cubetimer.settings.v1';
 const LS_DAILY = 'cubetimer.daily_goal.v1';
-// Mục tiêu ngày: 5 lần liên tiếp dưới 13s.
-const DAILY_GOAL_TARGET = 13;
+const LS_LADDER = 'cubetimer.ladder.v1';
+const LS_STREAK = 'cubetimer.streak.v1';
+const LS_RECOG = 'cubetimer.recog.v1';
+// Mục tiêu ngày theo bậc thang: 5 lần liên tiếp dưới mốc, xong thì tự
+// nâng lên mốc tiếp theo (13 -> 12,5 -> 12 -> 11,5 -> 11 -> 10,5 -> 10).
+const LADDER = [13, 12.5, 12, 11.5, 11, 10.5, 10];
 const DAILY_GOAL_STREAK = 5;
+// Drill F2L riêng: mục tiêu 5 lần liên tiếp dưới 7s.
+const F2L_GOAL_TARGET = 7;
+// Thử thách độ đều: 10 lần liên tiếp trong khoảng ±1,5s (max-min <= 3s).
+const CONSISTENCY_TARGET = 10;
+const CONSISTENCY_BAND_MS = 3000;
+// Lượt tệ: chậm hơn 1,3× trung bình trong ngày (ngày đó có >= 5 lượt).
+const FLAG_RATIO = 1.3;
+// Mục tiêu tách bước: F2L <= 6,5s, LL <= 3,5s.
+const SPLIT_F2L_TARGET = 6500;
+const SPLIT_LL_TARGET = 3500;
 
 function validSolve(s) {
   return s && typeof s.id === 'string' && typeof s.scramble === 'string' &&
@@ -453,7 +844,10 @@ function loadSolves() {
     if (!Array.isArray(arr)) return [];
     return arr.filter(validSolve).map(function (s) {
       return { id: s.id, raw: (s.raw === undefined ? s.time : s.raw), time: s.time,
-               plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '' };
+               plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '',
+               mode: (typeof s.mode === 'string' ? s.mode : 'full'),
+               splits: (s.splits && typeof s.splits.f2l === 'number' ? s.splits : null),
+               case: (typeof s.case === 'string' ? s.case : null) };
     });
   } catch (e) { return []; }
 }
@@ -463,8 +857,11 @@ function saveSolves() {
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}');
-    return { inspection: s.inspection !== false, beep: s.beep !== false };
-  } catch (e) { return { inspection: true, beep: true }; }
+    return { inspection: s.inspection !== false, beep: s.beep !== false,
+             splitMode: !!s.splitMode, metronome: !!s.metronome,
+             metronomeBpm: (typeof s.metronomeBpm === 'number' ? s.metronomeBpm : 120),
+             mode: (typeof s.mode === 'string' ? s.mode : 'full') };
+  } catch (e) { return { inspection: true, beep: true, splitMode: false, metronome: false, metronomeBpm: 120, mode: 'full' }; }
 }
 function saveSettings() {
   try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {}
@@ -476,9 +873,9 @@ function todayStr() {
 function loadDaily() {
   try {
     const d = JSON.parse(localStorage.getItem(LS_DAILY) || '{}');
-    if (d.date === todayStr()) return { date: d.date, done: !!d.done, reminded: !!d.reminded };
+    if (d.date === todayStr()) return { date: d.date, done: !!d.done, reminded: !!d.reminded, consistencyDone: !!d.consistencyDone, target: (typeof d.target === 'number' ? d.target : null) };
   } catch (e) {}
-  return { date: todayStr(), done: false, reminded: false };
+  return { date: todayStr(), done: false, reminded: false, consistencyDone: false };
 }
 function saveDaily() {
   try { localStorage.setItem(LS_DAILY, JSON.stringify(daily)); } catch (e) {}
@@ -486,17 +883,102 @@ function saveDaily() {
 // Sang ngày mới thì reset mục tiêu ngày (khi app mở xuyên đêm).
 function refreshDaily() {
   if (daily.date !== todayStr()) {
-    daily = { date: todayStr(), done: false, reminded: false };
+    daily = { date: todayStr(), done: false, reminded: false, consistencyDone: false };
     saveDaily();
   }
+} 
+
+// --- Tiện ích theo chế độ và theo ngày ---
+function modeSolves(mode) {
+  return solves.filter(function (s) { return (s.mode || 'full') === mode; });
+}
+function currentModeSolves() { return modeSolves(settings.mode || 'full'); }
+function validTimes(arr) {
+  const out = [];
+  for (let i = 0; i < arr.length; i++) if (arr[i].time !== null) out.push(arr[i].time);
+  return out;
+}
+function dayKey(ms) {
+  const d = new Date(ms);
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+// Trung bình từng ngày (chỉ tính ngày có >= 5 lượt Full): dùng để gắn cờ
+// lượt tệ — mỗi lượt so với trung bình của chính ngày hôm đó.
+function dayMeans() {
+  const byDay = {};
+  const full = modeSolves('full');
+  for (let i = 0; i < full.length; i++) {
+    const s = full[i];
+    if (s.time === null) continue;
+    const k = dayKey(s.date);
+    if (!byDay[k]) byDay[k] = [];
+    byDay[k].push(s.time);
+  }
+  const out = {};
+  Object.keys(byDay).forEach(function (k) {
+    if (byDay[k].length >= 5) out[k] = meanOf(byDay[k]);
+  });
+  return out;
+}
+function isFlaggedWith(s, means) {
+  if (!s || s.time === null || (s.mode || 'full') !== 'full') return false;
+  const m = means[dayKey(s.date)];
+  return m !== undefined && s.time > FLAG_RATIO * m;
+}
+// Trung bình tách bước (F2L / ngập ngừng / LL) trên các lượt có splits.
+function splitsAvg(arr) {
+  const f = [], p = [], l = [];
+  for (let i = 0; i < arr.length; i++) {
+    const sp = arr[i].splits;
+    if (!sp) continue;
+    f.push(sp.f2l);
+    if (sp.pause !== null && sp.pause !== undefined) p.push(sp.pause);
+    l.push(sp.ll);
+  }
+  if (!f.length) return null;
+  return { f2l: meanOf(f), pause: p.length ? meanOf(p) : 0, ll: meanOf(l), n: f.length };
 }
 
 const $ = function (sel) { return document.querySelector(sel); };
 function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+function loadLadder() {
+  try {
+    const l = JSON.parse(localStorage.getItem(LS_LADDER) || '{}');
+    if (typeof l.rung === 'number' && l.rung >= 0 && l.rung < LADDER.length) return { rung: l.rung };
+  } catch (e) {}
+  return { rung: 0 };
+}
+function saveLadder() {
+  try { localStorage.setItem(LS_LADDER, JSON.stringify(ladder)); } catch (e) {}
+}
+function loadStreak() {
+  try {
+    const st = JSON.parse(localStorage.getItem(LS_STREAK) || '{}');
+    if (typeof st.count === 'number' && typeof st.lastDate === 'string') return { count: st.count, lastDate: st.lastDate };
+  } catch (e) {}
+  return { count: 0, lastDate: '' };
+}
+function saveStreak() {
+  try { localStorage.setItem(LS_STREAK, JSON.stringify(streak)); } catch (e) {}
+}
+function loadRecog() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_RECOG) || '[]');
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (r) { return r && typeof r.c === 'string' && typeof r.t === 'number'; });
+  } catch (e) { return []; }
+}
+function saveRecog() {
+  try { localStorage.setItem(LS_RECOG, JSON.stringify(recogTimes)); } catch (e) {}
+}
+
 let solves = loadSolves();
 let settings = loadSettings();
 let daily = loadDaily();
+let ladder = loadLadder();
+let streak = loadStreak();
+let recogTimes = loadRecog();
 let currentView = 'timer'; // 'timer' | 'history'
 let detailSolveId = null;
 // Chế độ chọn để xóa trong Lịch sử: bấm nút "Chọn để xóa" rồi nhấn giữ
@@ -511,9 +993,17 @@ let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
 let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
 let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
-let currentScramble = generateScramble();
+let currentScramble = generateScrambleFor(settings.mode || 'full');
 let rafId = null;
 let audioCtx = null;
+// Tách bước: splitStep 0 = chưa tách, 1 = đã tách F2L, 2 = đã tách LL.
+let splitStep = 0;
+let splitF2lMs = 0;
+let splitPauseMs = 0;
+// Nhấn giữ để dừng khi đang bật Tách bước (lối thoát khẩn).
+let lpStopTimer = null, lpStopFired = false;
+// Metronome nhịp tay.
+let metroTimer = null;
 
 const INSPECT_MS = 15000;   // nhìn trước 15s
 const INSPECT_DNF_MS = 17000; // quá 17s: DNF
@@ -556,7 +1046,10 @@ function handleTap() {
   if (currentView !== 'timer' || modalOpen() || inputFocused()) return;
   ensureAudio();
   if (phase === 'running') {
-    stopSolve();
+    // Tách bước đang bật (chỉ ở chế độ Full): chạm = tách bước tiếp theo,
+    // chạm lần 3 mới dừng. Nhấn giữ 0,6s hoặc bấm phím khác để dừng ngay.
+    if (settings.splitMode && (settings.mode || 'full') === 'full') advanceSplit();
+    else stopSolve();
     return;
   }
   if (phase === 'inspecting') {
@@ -595,27 +1088,51 @@ function startSolve() {
     pendingPlus2 = true; // bắt đầu trong khoảng 15-17s: +2
   }
   solveStart = performance.now();
+  splitStep = 0;
+  splitF2lMs = 0;
+  splitPauseMs = 0;
   phase = 'running';
   document.body.classList.add('running');
+  if (settings.splitMode && (settings.mode || 'full') === 'full') setStatus('Chạm khi hết F2L');
+  else setStatus('');
+  startMetronome();
   renderTimer();
 }
 
 function stopSolve() {
   const raw = Math.floor((performance.now() - solveStart) / 10) * 10; // cắt về 0.01s
   const newTime = raw + (pendingPlus2 ? PLUS2_MS : 0);
-  const record = checkRecord(solves, newTime);
+  const mode = settings.mode || 'full';
+  // Tách bước: chỉ lưu khi đã tách F2L và mốc tách cách lúc dừng > 0,5s
+  // (tránh trường hợp quên tách rồi chạm vội lúc cuối).
+  let splits = null;
+  if (settings.splitMode && mode === 'full' && splitStep >= 1 && raw - splitF2lMs > 500) {
+    const pause = splitStep >= 2 ? Math.floor(splitPauseMs / 10) * 10 : null;
+    splits = {
+      f2l: Math.floor(splitF2lMs / 10) * 10,
+      pause: pause,
+      ll: Math.floor((raw - splitF2lMs - (pause || 0)) / 10) * 10,
+    };
+  }
+  const record = checkRecord(modeSolves(mode), newTime);
   solves.push({
     id: makeId(), raw: raw, time: newTime,
     plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
+    mode: mode, splits: splits, case: currentStageCase,
   });
   saveSolves();
-  currentScramble = generateScramble();
+  currentScramble = generateScrambleFor(mode);
   phase = 'idle';
   document.body.classList.remove('running');
   stopLoop();
+  stopMetronome();
+  setStatus('');
   renderTimer();
   if (record) showRecordBox(record);
-  checkDailyGoal();
+  if (mode === 'full') {
+    const goalDone = checkDailyGoal();
+    if (!goalDone) checkConsistency();
+  }
 }
 
 // --- Mục tiêu ngày: 5 lần liên tiếp dưới 13s ---
@@ -632,14 +1149,49 @@ function hideGoalOverlay() {
   $('#goal-overlay').classList.add('hidden');
   if (goalOverlayTimer) { clearTimeout(goalOverlayTimer); goalOverlayTimer = null; }
 }
-// Sau mỗi lượt giải: đủ 5 lần liên tiếp dưới 13s trong ngày thì chúc mừng 1 lần.
+// Mốc mục tiêu ngày hiện tại theo bậc thang (13 -> 10).
+function ladderTarget() { return LADDER[ladder.rung]; }
+// Hiển thị mốc kiểu Việt Nam: 12.5 -> "12,5".
+function fmtTarget(t) { return String(t).replace('.', ','); }
+// Sau mỗi lượt giải Full: đủ 5 lần liên tiếp dưới mốc hiện tại trong ngày
+// thì chúc mừng 1 lần, tự nâng lên mốc tiếp theo và cập nhật chuỗi ngày.
+// Trả về true nếu vừa hoàn thành mục tiêu trong lượt này.
 function checkDailyGoal() {
   refreshDaily();
-  if (daily.done) return;
-  if (streakCount(DAILY_GOAL_TARGET) >= DAILY_GOAL_STREAK) {
+  if (daily.done) return false;
+  const target = ladderTarget();
+  if (streakCountIn(modeSolves('full'), target) >= DAILY_GOAL_STREAK) {
     daily.done = true;
+    daily.target = target;
     saveDaily();
-    showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>5 lần liên tiếp dưới 13s');
+    updateStreak();
+    const next = ladder.rung < LADDER.length - 1 ? LADDER[ladder.rung + 1] : null;
+    if (next !== null) { ladder.rung++; saveLadder(); }
+    showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>5 lần liên tiếp dưới ' + fmtTarget(target) + 's' +
+      (next !== null ? '<br>Mục tiêu tiếp theo: dưới ' + fmtTarget(next) + 's' : '<br>Đã chạm tới sub-10! 🏆'));
+    return true;
+  }
+  return false;
+}
+// Chuỗi ngày hoàn thành mục tiêu liên tiếp: hôm qua xong thì +1, đứt thì về 1.
+function updateStreak() {
+  const today = todayStr();
+  if (streak.lastDate === today) return;
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  const yesterday = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+  streak.count = (streak.lastDate === yesterday) ? streak.count + 1 : 1;
+  streak.lastDate = today;
+  saveStreak();
+}
+// Thử thách độ đều: 10 lần liên tiếp trong ±1,5s thì chúc mừng 1 lần/ngày.
+function checkConsistency() {
+  refreshDaily();
+  if (daily.consistencyDone) return;
+  if (consistencyCount(validTimes(modeSolves('full')), CONSISTENCY_BAND_MS) >= CONSISTENCY_TARGET) {
+    daily.consistencyDone = true;
+    saveDaily();
+    showGoalOverlay('🎯', 'Độ đều đỉnh!', '10 lần liên tiếp trong khoảng ±1,5s');
   }
 }
 // 23h59 đêm: chưa hoàn thành mục tiêu trong ngày thì nhắc 1 lần
@@ -651,8 +1203,52 @@ function checkNightReminder() {
   if (now.getHours() === 23 && now.getMinutes() === 59) {
     daily.reminded = true;
     saveDaily();
-    showGoalOverlay('⏰', 'Sắp hết ngày!', 'Hôm nay chưa hoàn thành mục tiêu:<br>5 lần liên tiếp dưới 13s');
+    showGoalOverlay('⏰', 'Sắp hết ngày!', 'Hôm nay chưa hoàn thành mục tiêu:<br>5 lần liên tiếp dưới ' + fmtTarget(ladderTarget()) + 's');
   }
+}
+// Tách bước khi đang giải (chỉ ở chế độ Full, khi Tách bước đang bật):
+// chạm 1 = hết F2L, chạm 2 = bắt đầu LL (khoảng giữa là thời gian ngập
+// ngừng), chạm 3 = dừng. Rung nhẹ mỗi lần tách để biết đã ghi mốc.
+function advanceSplit() {
+  const now = performance.now();
+  if (splitStep === 0) {
+    splitF2lMs = now - solveStart;
+    splitStep = 1;
+    setStatus('F2L: ' + fmt(splitF2lMs) + ' — chạm khi bắt đầu LL');
+    vibrate(50);
+  } else if (splitStep === 1) {
+    splitPauseMs = now - (solveStart + splitF2lMs);
+    splitStep = 2;
+    setStatus('Ngập ngừng: ' + fmt(splitPauseMs) + ' — chạm để dừng');
+    vibrate(50);
+  } else {
+    stopSolve();
+  }
+}
+// Metronome nhịp tay: tiếng tách ngắn theo BPM trong lúc giải.
+function metroTick() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 2000;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch (e) {}
+}
+function startMetronome() {
+  stopMetronome();
+  if (!settings.metronome) return;
+  const bpm = settings.metronomeBpm || 120;
+  metroTimer = setInterval(metroTick, 60000 / bpm);
+}
+function stopMetronome() {
+  if (metroTimer) { clearInterval(metroTimer); metroTimer = null; }
 }
 
 // --- Câu chat khi phá kỉ lục (tốt nhất / tệ nhất) ---
@@ -732,7 +1328,7 @@ function hideRecordBox() {
 // Quá 17s nhìn trước (quên bấm giờ): KHÔNG ghi lượt DNF nữa, tự bỏ lượt
 // này luôn rồi đổi scramble mới, không hiện thông báo gì thêm.
 function recordInspectionDnf() {
-  currentScramble = generateScramble();
+  currentScramble = generateScrambleFor(settings.mode || 'full');
   phase = 'idle';
   stopLoop();
   renderTimer();
@@ -804,44 +1400,60 @@ function updateClock() {
     }
     return;
   }
-  // idle: hiện lượt vừa giải (hoặc 0:00.00 nếu chưa có lượt nào)
-  const last = solves[solves.length - 1];
+  // idle: hiện lượt vừa giải ở chế độ hiện tại (hoặc 0:00.00 nếu chưa có)
+  const arr = currentModeSolves();
+  const last = arr[arr.length - 1];
   clock.textContent = last ? fmtSolve(last) : '0:00.00';
   clock.className = 'clock';
 }
 
 // Hàng thống kê dưới màn hình Timer: bảng Ao3/5/15/50/100 (cột Hiện tại và
 // Tốt nhất), dưới cùng là số lượt đã giải.
-// Số lượt liên tiếp dưới mốc t (giây), tính từ lượt mới nhất trở về
-// trước (tối đa 5). Gặp lượt quá mốc hoặc DNF là chuỗi đứt.
-function streakCount(t) {
+// Số lượt liên tiếp dưới mốc t (giây) trong mảng arr, tính từ lượt mới
+// nhất trở về trước (tối đa 5). Gặp lượt quá mốc hoặc DNF là chuỗi đứt.
+function streakCountIn(arr, t) {
   let n = 0;
-  for (let i = solves.length - 1; i >= 0 && n < 5; i--) {
-    const s = solves[i];
+  for (let i = arr.length - 1; i >= 0 && n < 5; i--) {
+    const s = arr[i];
     if (s.time === null || s.time >= t * 1000) break;
     n++;
   }
   return n;
 }
 
-// Đếm chuỗi liên tiếp dưới mỗi mốc sub, tính từ lượt mới nhất trở về
-// trước (tối đa 5): "13/2" = 2 lượt gần nhất đều dưới 13s.
+// Đếm chuỗi liên tiếp dưới mỗi mốc sub ở chế độ hiện tại, tính từ lượt
+// mới nhất trở về trước (tối đa 5): "13/2" = 2 lượt gần nhất đều dưới 13s.
 function subGoalsHTML() {
+  const arr = currentModeSolves();
   return SUB_TARGETS.map(function (t) {
-    return t + '/' + streakCount(t);
+    return t + '/' + streakCountIn(arr, t);
   }).join('<br>');
 }
 
 function statsRowHTML() {
+  const arr = currentModeSolves();
+  const times = validTimes(arr);
+  const mode = settings.mode || 'full';
   let rows = '';
   for (const n of [3, 5, 15, 50, 100]) {
-    rows += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(solves, n)) +
-      '</td><td class="num">' + fmtAverageResult(bestAverageOf(solves, n)) + '</td></tr>';
+    rows += '<tr><td>Ao' + n + '</td><td class="num">' + fmtAverageResult(averageOf(arr, n)) +
+      '</td><td class="num">' + fmtAverageResult(bestAverageOf(arr, n)) + '</td></tr>';
   }
-  rows += '<tr><td>Số lần</td><td class="num" colspan="2">' + solves.length + '</td></tr>';
+  rows += '<tr><td>Số lần</td><td class="num" colspan="2">' + arr.length + '</td></tr>';
+  const sd = stddevOf(times.slice(-12));
+  rows += '<tr><td>Độ lệch</td><td class="num" colspan="2">' + (sd === null ? '-' : '±' + fmt(sd)) + '</td></tr>';
+  const cc = consistencyCount(times, CONSISTENCY_BAND_MS);
+  rows += '<tr><td>Độ đều</td><td class="num" colspan="2">' + cc + '/' + CONSISTENCY_TARGET + ' (±1,5s)</td></tr>';
+  let extra = '';
+  if (mode === 'f2l') {
+    extra = '<div class="split-line">🎯 Dưới 7s: ' + streakCountIn(arr, F2L_GOAL_TARGET) + '/5 liên tiếp</div>';
+  } else if (mode === 'full') {
+    const sa = splitsAvg(arr);
+    if (sa) extra = '<div class="split-line">F2L ⌀ ' + fmt(sa.f2l) + ' · Ngừng ⌀ ' + fmt(sa.pause) + ' · LL ⌀ ' + fmt(sa.ll) + '</div>';
+  }
   return '<div class="sub-goals">' + subGoalsHTML() + '</div>' +
     '<div class="ao-col"><table>' +
-    '<tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>' + rows + '</table></div>';
+    '<tr><th></th><th>Hiện tại</th><th>Tốt nhất</th></tr>' + rows + '</table>' + extra + '</div>';
 }
 
 function renderTimer() {
@@ -878,6 +1490,7 @@ function escapeHtml(s) {
 function modalOpen() {
   return !$('#detail-modal').classList.contains('hidden') ||
     !$('#settings-modal').classList.contains('hidden') ||
+    !$('#summary-modal').classList.contains('hidden') ||
     !$('#goal-overlay').classList.contains('hidden');
 }
 function inputFocused() {
@@ -887,6 +1500,7 @@ function inputFocused() {
 
 function setNav(view) {
   $('#nav-timer').classList.toggle('active', view === 'timer');
+  $('#nav-recog').classList.toggle('active', view === 'recog');
   $('#nav-history').classList.toggle('active', view === 'history');
 }
 
@@ -894,6 +1508,7 @@ function showHistory() {
   cancelTiming();
   currentView = 'history';
   $('#timer-view').classList.add('hidden');
+  $('#recog-view').classList.add('hidden');
   $('#history-view').classList.remove('hidden');
   setNav('history');
   renderHistory();
@@ -901,35 +1516,55 @@ function showHistory() {
 function showTimer() {
   currentView = 'timer';
   $('#history-view').classList.add('hidden');
+  $('#recog-view').classList.add('hidden');
   $('#timer-view').classList.remove('hidden');
   setNav('timer');
   renderTimer();
+}
+function showRecog() {
+  cancelTiming();
+  currentView = 'recog';
+  $('#timer-view').classList.add('hidden');
+  $('#history-view').classList.add('hidden');
+  $('#recog-view').classList.remove('hidden');
+  setNav('recog');
+  renderRecog();
 }
 
 function renderGoalStatus() {
   refreshDaily();
   const el = $('#goal-status');
+  const t = ladderTarget();
   if (daily.done) {
-    el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới 13s)';
+    const doneTarget = (typeof daily.target === 'number' ? daily.target : t);
+    const suffix = doneTarget <= 10 ? ' · Đã chạm sub-10! 🏆' : ' · Tiếp theo: dưới ' + fmtTarget(t) + 's';
+    el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới ' + fmtTarget(doneTarget) + 's)' + suffix;
   } else {
-    el.textContent = '⏳ Chuỗi dưới 13s hiện tại: ' + streakCount(DAILY_GOAL_TARGET) + '/5';
+    el.textContent = '⏳ Chuỗi dưới ' + fmtTarget(t) + 's hiện tại: ' + streakCountIn(modeSolves('full'), t) + '/5';
   }
+  const sl = $('#streak-line');
+  if (sl) sl.textContent = streak.count > 0 ? '🔥 Chuỗi ngày hoàn thành mục tiêu: ' + streak.count + ' ngày' : '';
 }
 
 function renderHistory() {
   exitSelectMode();
   renderGoalStatus();
+  renderModeChips('history');
   const list = $('#history-list');
-  if (solves.length === 0) {
+  const arr = currentModeSolves();
+  const means = dayMeans();
+  if (arr.length === 0) {
     list.innerHTML = '<div class="empty-msg">Chưa có lượt giải nào.</div>';
     return;
   }
   let html = '';
-  for (let i = solves.length - 1; i >= 0; i--) {
-    const s = solves[i];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const s = arr[i];
+    const flagged = isFlaggedWith(s, means);
     const d = new Date(s.date);
     const dateStr = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
-    html += '<div class="solve-row" data-id="' + s.id + '">' +
+    html += '<div class="solve-row' + (flagged ? ' flagged' : '') + '" data-id="' + s.id + '">' +
+      (flagged ? '<span class="flag">🚩</span>' : '') +
       '<span class="date">' + dateStr + (s.note ? ' &#9998;' : '') + '</span>' +
       '<span class="time' + (s.time === null ? ' dnf' : '') + '">' + escapeHtml(fmtSolve(s)) + '</span>' +
       '</div>';
@@ -939,18 +1574,28 @@ function renderHistory() {
 
 // --- Modal chi tiết lượt giải ---
 function openDetail(id) {
-  const idx = solves.findIndex(function (s) { return s.id === id; });
-  if (idx === -1) return;
+  const s0 = solves.find(function (x) { return x.id === id; });
+  if (!s0) return;
+  const arr = modeSolves(s0.mode || 'full');
+  const idx = arr.findIndex(function (x) { return x.id === id; });
   detailSolveId = id;
-  const s = solves[idx];
-  const upTo = solves.slice(0, idx + 1);
-  $('#detail-title').textContent = 'Lượt #' + (idx + 1);
+  const s = s0;
+  const upTo = arr.slice(0, idx + 1);
+  let extra = '';
+  if (s.splits) {
+    extra += '<div class="detail-line">F2L: <b>' + fmt(s.splits.f2l) + '</b> (mục tiêu ≤ 6,5s)' +
+      (s.splits.pause !== null && s.splits.pause !== undefined ? ' · Ngập ngừng: <b>' + fmt(s.splits.pause) + '</b>' : '') +
+      ' · LL: <b>' + fmt(s.splits.ll) + '</b> (mục tiêu ≤ 3,5s)</div>';
+  }
+  if (s.case) extra += '<div class="detail-line">Case: <b>' + escapeHtml(s.case) + '</b></div>';
+  if (isFlaggedWith(s, dayMeans())) extra += '<div class="detail-line">🚩 Lượt này chậm hơn 1,3× trung bình trong ngày.</div>';
+  $('#detail-title').textContent = 'Lượt #' + (idx + 1) + ' (' + modeName(s.mode || 'full') + ')';
   $('#detail-body').innerHTML =
     '<div class="detail-line">Thời gian: <b>' + escapeHtml(fmtSolve(s)) + '</b></div>' +
     '<div class="detail-line">Scramble: ' + escapeHtml(s.scramble) + '</div>' +
     '<div class="detail-line">Ngày giờ: ' + new Date(s.date).toLocaleString('vi-VN') + '</div>' +
     '<div class="detail-line">Ao5 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 5)) +
-    '</b> · Ao12 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 12)) + '</b></div>';
+    '</b> · Ao12 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 12)) + '</b></div>' + extra;
   $('#detail-note').value = s.note || '';
   $('#detail-plus2').disabled = s.time === null;
   $('#detail-dnf').disabled = s.time === null && s.raw === null;
@@ -963,10 +1608,155 @@ function closeDetail() {
 function openSettings() {
   $('#set-inspection').checked = settings.inspection;
   $('#set-beep').checked = settings.beep;
+  $('#set-split').checked = !!settings.splitMode;
+  $('#set-metro').checked = !!settings.metronome;
+  $('#set-bpm').value = settings.metronomeBpm || 120;
   $('#settings-modal').classList.remove('hidden');
 }
 function closeSettings() {
   $('#settings-modal').classList.add('hidden');
+}
+
+/* =====================================================================
+   PHẦN 5B: CHẾ ĐỘ TẬP, TỔNG KẾT BUỔI TẬP, NHẬN DIỆN PLL
+   ===================================================================== */
+
+// --- Chip chọn chế độ ở màn Timer và Lịch sử ---
+function renderModeChips(where) {
+  const el = where === 'history' ? $('#mode-chips-history') : $('#mode-chips');
+  if (!el) return;
+  const cur = settings.mode || 'full';
+  el.innerHTML = MODES.map(function (m) {
+    return '<button data-mode="' + m.id + '"' + (cur === m.id ? ' class="active"' : '') + '>' + m.name + '</button>';
+  }).join('');
+}
+function setMode(mode) {
+  if (phase !== 'idle') return; // đang bấm giờ thì không đổi chế độ
+  settings.mode = mode;
+  saveSettings();
+  currentScramble = generateScrambleFor(mode);
+  renderModeChips('timer');
+  renderModeChips('history');
+  renderTimer();
+  if (currentView === 'history') renderHistory();
+}
+// --- Nút bật/tắt Tách bước và Metronome dưới bảng thống kê ---
+function renderToggles() {
+  const sb = $('#btn-split-toggle');
+  sb.textContent = '✂️ Tách bước: ' + (settings.splitMode ? 'Bật' : 'Tắt');
+  sb.classList.toggle('on', !!settings.splitMode);
+  const mb = $('#btn-metro-toggle');
+  mb.textContent = '🥁 Metronome: ' + (settings.metronome ? 'Bật' : 'Tắt');
+  mb.classList.toggle('on', !!settings.metronome);
+}
+// --- Tổng kết buổi tập (lượt giải hôm nay ở chế độ hiện tại) ---
+function openSummary() {
+  $('#summary-body').innerHTML = buildSummaryHTML();
+  $('#summary-modal').classList.remove('hidden');
+}
+function closeSummary() {
+  $('#summary-modal').classList.add('hidden');
+}
+function buildSummaryHTML() {
+  const mode = settings.mode || 'full';
+  const arr = currentModeSolves();
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const today = arr.filter(function (s) { return s.date >= start.getTime(); });
+  const times = validTimes(today);
+  if (!today.length) return '<div class="summary-line">Hôm nay chưa có lượt giải nào ở chế độ ' + modeName(mode) + '.</div>';
+  if (!times.length) return '<div class="summary-line">Hôm nay chỉ có lượt DNF ở chế độ ' + modeName(mode) + '.</div>';
+  const best = Math.min.apply(null, times);
+  const worst = Math.max.apply(null, times);
+  const means = dayMeans();
+  let flagged = 0;
+  for (let i = 0; i < today.length; i++) if (isFlaggedWith(today[i], means)) flagged++;
+  const sa = splitsAvg(today);
+  let h = '';
+  h += '<div class="summary-line">Chế độ: <b>' + modeName(mode) + '</b> · Số lượt hôm nay: <b>' + today.length + '</b></div>';
+  h += '<div class="summary-line">Nhanh nhất: <b>' + fmt(best) + '</b> · Chậm nhất: <b>' + fmt(worst) + '</b></div>';
+  h += '<div class="summary-line">Trung bình: <b>' + fmtAvg(meanOf(times)) + '</b> · Ao5: <b>' + fmtAverageResult(averageOf(today, 5)) + '</b> · Ao12: <b>' + fmtAverageResult(averageOf(today, 12)) + '</b></div>';
+  const sd = stddevOf(times);
+  h += '<div class="summary-line">Độ lệch chuẩn: <b>' + (sd === null ? '-' : '±' + fmt(sd)) + '</b> · Độ đều: <b>' + consistencyCount(times, CONSISTENCY_BAND_MS) + '/' + CONSISTENCY_TARGET + '</b></div>';
+  if (sa) h += '<div class="summary-line">F2L trung bình: <b>' + fmt(sa.f2l) + '</b> (mục tiêu ≤ 6,5s) · Ngập ngừng: <b>' + fmt(sa.pause) + '</b> · LL: <b>' + fmt(sa.ll) + '</b> (mục tiêu ≤ 3,5s) — ' + sa.n + ' lượt có tách bước</div>';
+  if (mode === 'full') {
+    h += '<div class="summary-line">Lượt bị gắn cờ 🚩: <b>' + flagged + '</b></div>';
+    h += '<div class="summary-line">Mục tiêu ngày: <b>' + (daily.done ? 'đã xong' : 'chuỗi dưới ' + fmtTarget(ladderTarget()) + 's: ' + streakCountIn(modeSolves('full'), ladderTarget()) + '/5') + '</b> · Chuỗi ngày: <b>' + streak.count + '</b></div>';
+  }
+  return h;
+}
+// --- Drill nhận diện PLL: hiện hình khối của 1 case ngẫu nhiên, bấm khi
+// --- nhận ra case nào. Thời gian nhận diện được lưu riêng (LS_RECOG).
+// Lưới hình khối: mặt U ở giữa + hàng trên của 4 mặt bên (chỉ số facelet,
+// null = ô trống). Thứ tự các hàng bên đã xoay cho đúng hướng nhìn từ trên.
+const NET_MAP = [
+  [null, 47, 46, 45, null],
+  [36, 0, 1, 2, 11],
+  [37, 3, 4, 5, 10],
+  [38, 6, 7, 8, 9],
+  [null, 18, 19, 20, null],
+];
+const FACE_COLORS = { W: '#ffffff', R: '#d50000', G: '#00a651', Y: '#ffd500', O: '#ff6d00', B: '#1565c0' };
+let recogState = 'idle'; // 'idle' | 'showing' | 'revealed'
+let recogStart = 0, recogRaf = null, recogCase = null;
+function renderRecogNet(facelets) {
+  let h = '';
+  for (let r = 0; r < NET_MAP.length; r++) {
+    h += '<div class="net-row">';
+    for (let c = 0; c < NET_MAP[r].length; c++) {
+      const idx = NET_MAP[r][c];
+      if (idx === null) h += '<div class="st blank"></div>';
+      else h += '<div class="st" style="background:' + FACE_COLORS[facelets[idx]] + '"></div>';
+    }
+    h += '</div>';
+  }
+  $('#recog-net').innerHTML = h;
+}
+function recogNewCase() {
+  if (typeof PLL_LIST === 'undefined' || !PLL_LIST.length ||
+      typeof applyAlg === 'undefined' || typeof solvedState === 'undefined' ||
+      typeof invertAlg === 'undefined' || typeof stateToFacelets === 'undefined') {
+    $('#recog-answer').textContent = 'Chưa có dữ liệu PLL.';
+    return;
+  }
+  recogCase = PLL_LIST[Math.floor(Math.random() * PLL_LIST.length)];
+  const state = applyAlg(solvedState(), invertAlg(recogCase.alg));
+  renderRecogNet(stateToFacelets(state));
+  $('#recog-answer').textContent = '';
+  $('#btn-recog-gotit').disabled = false;
+  recogStart = performance.now();
+  recogState = 'showing';
+  if (recogRaf) cancelAnimationFrame(recogRaf);
+  const tick = function () {
+    if (recogState !== 'showing') return;
+    $('#recog-clock').textContent = ((performance.now() - recogStart) / 1000).toFixed(2);
+    recogRaf = requestAnimationFrame(tick);
+  };
+  recogRaf = requestAnimationFrame(tick);
+}
+function recogGotIt() {
+  if (recogState !== 'showing') return;
+  recogState = 'revealed';
+  if (recogRaf) cancelAnimationFrame(recogRaf);
+  const ms = Math.floor((performance.now() - recogStart) / 10) * 10;
+  $('#recog-clock').textContent = (ms / 1000).toFixed(2);
+  $('#recog-answer').innerHTML = recogCase.name + '<small>' + escapeHtml(recogCase.alg) + '</small>';
+  $('#btn-recog-gotit').disabled = true;
+  recogTimes.push({ c: recogCase.name, t: ms, date: Date.now() });
+  saveRecog();
+  renderRecogStats();
+}
+function renderRecogStats() {
+  const el = $('#recog-stats');
+  if (!recogTimes.length) { el.textContent = 'Chưa có lượt nhận diện nào.'; return; }
+  const times = recogTimes.map(function (r) { return r.t; });
+  const last5 = times.slice(-5);
+  el.innerHTML = 'Số lượt: <b>' + times.length + '</b> · Nhanh nhất: <b>' +
+    (Math.min.apply(null, times) / 1000).toFixed(2) + 's</b> · Trung bình 5 lượt gần nhất: <b>' +
+    (meanOf(last5) / 1000).toFixed(2) + 's</b>';
+}
+function renderRecog() {
+  renderRecogStats();
 }
 
 /* =====================================================================
@@ -977,6 +1767,10 @@ function closeSettings() {
 // khi NHẢ tay ra (pointerup), kiểu stackmat — nhấc tay khỏi mặt bàn thì giờ mới chạy.
 document.addEventListener('pointerup', function (e) {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
+  // Nhấn giữ để dừng (khi Tách bước đang bật): đã dừng ở pointerdown thì
+  // nhả tay không làm gì thêm (đừng bắt đầu lượt mới).
+  if (lpStopTimer) { clearTimeout(lpStopTimer); lpStopTimer = null; }
+  if (lpStopFired) { lpStopFired = false; return; }
   // Đang chạy giờ: nhả tay ở BẤT CỨ đâu cũng dừng — kể cả khi tay trượt
   // hay chạm trúng nút (lúc chạy các nút đã ẩn, nhưng tay đập mạnh hay trượt).
   if (phase === 'running') { handleTap(); return; }
@@ -984,6 +1778,17 @@ document.addEventListener('pointerup', function (e) {
   if (e.target.closest('button, a, input, select, textarea, label')) return;
   if (performance.now() - lastSwipeAt < 150) return; // vừa lướt xong
   handleTap();
+});
+// Nhấn giữ 0,6s khi đang chạy (Tách bước bật): dừng ngay, khỏi cần chạm
+// đủ 3 lần tách — lối thoát khi quên tách hoặc muốn bỏ lượt.
+document.addEventListener('pointerdown', function (e) {
+  lpStopFired = false;
+  if (phase !== 'running' || !settings.splitMode || (settings.mode || 'full') !== 'full') return;
+  if (modalOpen() || inputFocused()) return;
+  lpStopTimer = setTimeout(function () {
+    lpStopFired = true;
+    stopSolve();
+  }, 600);
 });
 $('#timer-view').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
@@ -1011,7 +1816,7 @@ document.addEventListener('touchend', function (e) {
 }, { passive: true });
 
 window.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { closeDetail(); closeSettings(); hideGoalOverlay(); return; }
+  if (e.key === 'Escape') { closeDetail(); closeSettings(); closeSummary(); hideGoalOverlay(); return; }
   if (inputFocused() || modalOpen()) return;
   if (currentView !== 'timer') return;
   if (e.repeat) return;
@@ -1034,6 +1839,43 @@ document.addEventListener('click', function (e) {
 
 $('#nav-history').addEventListener('click', showHistory);
 $('#nav-timer').addEventListener('click', showTimer);
+$('#nav-recog').addEventListener('click', showRecog);
+$('#nav-settings').addEventListener('click', openSettings);
+$('#set-split').addEventListener('change', function (e) {
+  settings.splitMode = e.target.checked;
+  saveSettings();
+  renderToggles();
+});
+$('#set-metro').addEventListener('change', function (e) {
+  settings.metronome = e.target.checked;
+  saveSettings();
+  renderToggles();
+});
+$('#set-bpm').addEventListener('change', function (e) {
+  const v = parseInt(e.target.value, 10);
+  settings.metronomeBpm = (isNaN(v) ? 120 : Math.min(240, Math.max(60, v)));
+  e.target.value = settings.metronomeBpm;
+  saveSettings();
+});
+$('#btn-split-toggle').addEventListener('click', function () {
+  settings.splitMode = !settings.splitMode;
+  saveSettings();
+  renderToggles();
+});
+$('#btn-metro-toggle').addEventListener('click', function () {
+  settings.metronome = !settings.metronome;
+  saveSettings();
+  renderToggles();
+});
+$('#btn-summary').addEventListener('click', openSummary);
+$('#summary-close').addEventListener('click', closeSummary);
+$('#btn-recog-new').addEventListener('click', recogNewCase);
+$('#btn-recog-gotit').addEventListener('click', recogGotIt);
+// Bấm chip chế độ (ở cả màn Timer và Lịch sử).
+document.addEventListener('click', function (e) {
+  const chip = e.target.closest('[data-mode]');
+  if (chip) setMode(chip.dataset.mode);
+});
 $('#settings-close').addEventListener('click', closeSettings);
 $('#set-inspection').addEventListener('change', function (e) {
   settings.inspection = e.target.checked;
@@ -1142,13 +1984,20 @@ $('#detail-delete').addEventListener('click', function () {
 });
 document.querySelectorAll('.modal').forEach(function (m) {
   m.addEventListener('click', function (e) {
-    if (e.target === m) { closeDetail(); closeSettings(); }
+    if (e.target === m) { closeDetail(); closeSettings(); closeSummary(); }
   });
 });
 
 // Khởi động.
 $('#set-inspection').checked = settings.inspection;
 $('#set-beep').checked = settings.beep;
+$('#set-split').checked = !!settings.splitMode;
+$('#set-metro').checked = !!settings.metronome;
+$('#set-bpm').value = settings.metronomeBpm || 120;
+if (!settings.mode) settings.mode = 'full';
+currentScramble = generateScrambleFor(settings.mode);
+renderModeChips('timer');
+renderToggles();
 renderTimer();
 // Nhắc mục tiêu ngày lúc 23h59 (kiểm tra mỗi 20s, chỉ nhắc khi app đang mở).
 setInterval(checkNightReminder, 20000);

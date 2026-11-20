@@ -63,6 +63,7 @@
   .clock.running { color: #2e7d32; }
   .clock.warn-yellow { color: #ef6c00; }
   .clock.warn-red { color: #d32f2f; }
+  .clock.hidden-time { background: #fff; color: #d50000; padding: 0 16px; border-radius: 16px; }
   .status { margin-top: 6px; color: #d32f2f; font-size: 14px; min-height: 1.2em; text-align: center; }
   /* ---- Khung chat kỉ lục dưới scramble (giữ chỗ 2 dòng, ẩn khi chưa có) ---- */
   .record-box { min-height: 2.6em; margin: 8px 16px 0; border-radius: 12px; padding: 8px 12px; text-align: center; visibility: hidden; }
@@ -362,6 +363,8 @@
     <label class="check"><input type="checkbox" id="set-split"> Tách bước khi giải (chạm để tách F2L / LL)</label>
     <label class="check"><input type="checkbox" id="set-metro"> Metronome nhịp tay khi giải</label>
     <label class="check">Nhịp metronome: <input type="number" id="set-bpm" min="60" max="240" step="5" value="120"> BPM</label>
+    <label class="check"><input type="checkbox" id="set-hidetime"> Ẩn thời gian khi giải (hiện chữ HIỂN)</label>
+    <label class="check"><input type="checkbox" id="set-sounds" checked> Âm thanh phá kỉ lục / chậm nhất (nhạc + tiếng cười)</label>
     <p class="note">Chạm hoặc nhấn giữ 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp thật nhanh: hoàn tác lượt vừa giải và về scramble đó.</p>
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
@@ -860,8 +863,9 @@ function loadSettings() {
     return { inspection: s.inspection !== false, beep: s.beep !== false,
              splitMode: !!s.splitMode, metronome: !!s.metronome,
              metronomeBpm: (typeof s.metronomeBpm === 'number' ? s.metronomeBpm : 120),
-             mode: (typeof s.mode === 'string' ? s.mode : 'full') };
-  } catch (e) { return { inspection: true, beep: true, splitMode: false, metronome: false, metronomeBpm: 120, mode: 'full' }; }
+             mode: (typeof s.mode === 'string' ? s.mode : 'full'),
+             hideTime: !!s.hideTime, recordSounds: s.recordSounds !== false };
+  } catch (e) { return { inspection: true, beep: true, splitMode: false, metronome: false, metronomeBpm: 120, mode: 'full', hideTime: false, recordSounds: true }; }
 }
 function saveSettings() {
   try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {}
@@ -991,6 +995,7 @@ let selectedIds = new Set();
 let phase = 'idle';
 let inspectStart = 0;  // performance.now() lúc bắt đầu nhìn trước
 let solveStart = 0;    // performance.now() lúc bắt đầu chạy giờ
+let lastStopAt = 0;    // performance.now() lúc dừng lượt vừa rồi (chống chạm nhầm 0,5s sau khi dừng)
 let pendingPlus2 = false;
 let beeped8 = false, beeped12 = false;
 let currentScramble = generateScrambleFor(settings.mode || 'full');
@@ -1061,6 +1066,10 @@ function handleTap() {
 
 function startInspectionOrSolve() {
   if (phase !== 'idle' || currentView !== 'timer') return;
+  // Vừa dừng lượt xong: bỏ qua chạm trong 0,5s (tránh lỡ chạm 2 lần để
+  // dừng rồi chạm thứ 2 lại bắt đầu inspection mới). lastStopAt = 0 nghĩa
+  // là chưa dừng lượt nào (vừa mở app) thì không chặn.
+  if (lastStopAt > 0 && performance.now() - lastStopAt < 500) return;
   hideRecordBox();
   setStatus('');
   if (settings.inspection) {
@@ -1103,10 +1112,15 @@ function stopSolve() {
   const raw = Math.floor((performance.now() - solveStart) / 10) * 10; // cắt về 0.01s
   const newTime = raw + (pendingPlus2 ? PLUS2_MS : 0);
   const mode = settings.mode || 'full';
+  lastStopAt = performance.now();
+  // Lượt dưới 5s ở Full/F2L là bấm nhầm (trình cậu không giải dưới 5s
+  // được): bỏ luôn, không lưu, không hỏi, không thông báo. Không áp dụng
+  // cho OLL/PLL vì drill tầng cuối dưới 5s là bình thường.
+  const skipSave = (mode === 'full' || mode === 'f2l') && newTime < 5000;
   // Tách bước: chỉ lưu khi đã tách F2L và mốc tách cách lúc dừng > 0,5s
   // (tránh trường hợp quên tách rồi chạm vội lúc cuối).
   let splits = null;
-  if (settings.splitMode && mode === 'full' && splitStep >= 1 && raw - splitF2lMs > 500) {
+  if (!skipSave && settings.splitMode && mode === 'full' && splitStep >= 1 && raw - splitF2lMs > 500) {
     const pause = splitStep >= 2 ? Math.floor(splitPauseMs / 10) * 10 : null;
     splits = {
       f2l: Math.floor(splitF2lMs / 10) * 10,
@@ -1114,13 +1128,15 @@ function stopSolve() {
       ll: Math.floor((raw - splitF2lMs - (pause || 0)) / 10) * 10,
     };
   }
-  const record = checkRecord(modeSolves(mode), newTime);
-  solves.push({
-    id: makeId(), raw: raw, time: newTime,
-    plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
-    mode: mode, splits: splits, case: currentStageCase,
-  });
-  saveSolves();
+  const record = skipSave ? null : checkRecord(modeSolves(mode), newTime);
+  if (!skipSave) {
+    solves.push({
+      id: makeId(), raw: raw, time: newTime,
+      plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
+      mode: mode, splits: splits, case: currentStageCase,
+    });
+    saveSolves();
+  }
   currentScramble = generateScrambleFor(mode);
   phase = 'idle';
   document.body.classList.remove('running');
@@ -1129,7 +1145,7 @@ function stopSolve() {
   setStatus('');
   renderTimer();
   if (record) showRecordBox(record);
-  if (mode === 'full') {
+  if (!skipSave && mode === 'full') {
     const goalDone = checkDailyGoal();
     if (!goalDone) checkConsistency();
   }
@@ -1266,7 +1282,11 @@ const BEST_MUSIC = 'data:audio/mpeg;base64,SUQzBAAAAAACHVRYWFgAAAASAAADbWFqb3JfY
 let bestMusicAudio = null;
 let hahaAudio = null; // giữ tham chiếu cố định như nhạc: tạo rồi bỏ thì WebView
 // trên một số máy dọn rác giữa chừng làm mất tiếng cười.
+// Âm lượng tiếng cười: đo bằng ffmpeg, cười trung bình -9,8 dB còn nhạc
+// -14,3 dB nên hạ cười xuống 0,6 cho ngang nhạc.
+const HAHA_VOLUME = 0.6;
 function playBestMusic() {
+  if (settings.recordSounds === false) return;
   stopBestMusic();
   try {
     bestMusicAudio = new Audio(BEST_MUSIC);
@@ -1280,9 +1300,18 @@ function stopBestMusic() {
     bestMusicAudio = null;
   }
 }
+// Dừng tiếng cười (giữ lại tham chiếu cố định để lần sau phát lại).
+function stopHaha() {
+  if (hahaAudio) {
+    try { hahaAudio.pause(); } catch (e) {}
+    try { hahaAudio.currentTime = 0; } catch (e) {}
+  }
+}
 function playHaha() {
+  if (settings.recordSounds === false) return;
   try {
     if (!hahaAudio) hahaAudio = new Audio(HAHA_AUDIO);
+    hahaAudio.volume = HAHA_VOLUME;
     try { hahaAudio.currentTime = 0; } catch (e) {}
     const p = hahaAudio.play();
     if (p && p.catch) p.catch(function () {});
@@ -1308,6 +1337,7 @@ function showRecordBox(kind) {
   const title = box.querySelector('.rb-title');
   const sub = box.querySelector('.rb-sub');
   stopBestMusic();
+  stopHaha();
   if (kind === 'best') {
     box.className = 'record-box best show';
     title.textContent = '🎉 Adu đạt kỉ lục kìa!';
@@ -1322,6 +1352,7 @@ function showRecordBox(kind) {
 }
 function hideRecordBox() {
   stopBestMusic();
+  stopHaha();
   $('#record-box').className = 'record-box';
 }
 
@@ -1380,8 +1411,15 @@ function setStatus(text) { $('#status').textContent = text; }
 function updateClock() {
   const clock = $('#clock');
   if (phase === 'running') {
-    clock.textContent = fmt(performance.now() - solveStart);
-    clock.className = 'clock running';
+    // Ẩn thời gian: lúc đang giải chỉ hiện chữ HIỂN (nền trắng, chữ đỏ),
+    // giải xong mới hiện giờ thật.
+    if (settings.hideTime) {
+      clock.textContent = 'HIỂN';
+      clock.className = 'clock hidden-time';
+    } else {
+      clock.textContent = fmt(performance.now() - solveStart);
+      clock.className = 'clock running';
+    }
     return;
   }
   if (phase === 'inspecting') {
@@ -1611,6 +1649,8 @@ function openSettings() {
   $('#set-split').checked = !!settings.splitMode;
   $('#set-metro').checked = !!settings.metronome;
   $('#set-bpm').value = settings.metronomeBpm || 120;
+  $('#set-hidetime').checked = !!settings.hideTime;
+  $('#set-sounds').checked = settings.recordSounds !== false;
   $('#settings-modal').classList.remove('hidden');
 }
 function closeSettings() {
@@ -1885,6 +1925,16 @@ $('#set-beep').addEventListener('change', function (e) {
   settings.beep = e.target.checked;
   saveSettings();
 });
+$('#set-hidetime').addEventListener('change', function (e) {
+  settings.hideTime = e.target.checked;
+  saveSettings();
+  renderTimer();
+});
+$('#set-sounds').addEventListener('change', function (e) {
+  settings.recordSounds = e.target.checked;
+  saveSettings();
+  if (!settings.recordSounds) { stopBestMusic(); stopHaha(); }
+});
 $('#history-list').addEventListener('click', function (e) {
   if (lpFired) { lpFired = false; return; } // vừa nhấn giữ xong, đừng mở chi tiết
   if (selectMode) return; // chế độ chọn: chỉ nhấn giữ mới chọn, bấm thường không làm gì
@@ -1994,6 +2044,8 @@ $('#set-beep').checked = settings.beep;
 $('#set-split').checked = !!settings.splitMode;
 $('#set-metro').checked = !!settings.metronome;
 $('#set-bpm').value = settings.metronomeBpm || 120;
+$('#set-hidetime').checked = !!settings.hideTime;
+$('#set-sounds').checked = settings.recordSounds !== false;
 if (!settings.mode) settings.mode = 'full';
 currentScramble = generateScrambleFor(settings.mode);
 renderModeChips('timer');

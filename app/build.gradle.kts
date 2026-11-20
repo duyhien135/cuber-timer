@@ -1,30 +1,32 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Keystore ký debug CỐ ĐỊNH: trước đây mỗi lần build trên GitHub Actions
+// tự sinh key mới nên Android không cho cài đè (INSTALL_FAILED_UPDATE_INCOMPATIBLE).
+// Keystore lưu dạng base64 trong repo (debug.keystore.b64) vì file nhị phân
+// không đẩy qua connector được; giải mã ra debug.keystore ngay lúc cấu hình
+// (trước mọi task, để AGP đọc được khi ký). Đây là key DEBUG
+// (alias androiddebugkey, mật khẩu android), hạn tới 2054.
+// Lưu ý (build-26 đã fail vì vậy): KHÔNG đặt code này trong khối android {}
+// vì `java.util.Base64` không phân giải được ở đó.
+val debugKeystoreFile = layout.projectDirectory.file("../debug.keystore").asFile
+if (!debugKeystoreFile.exists()) {
+    val b64 = layout.projectDirectory.file("../debug.keystore.b64").asFile.readText()
+    debugKeystoreFile.writeBytes(Base64.getMimeDecoder().decode(b64))
 }
 
 android {
     namespace = "com.example.cubetimer"
     compileSdk = 35
 
-    // Keystore ký debug CỐ ĐỊNH: trước đây mỗi lần build trên GitHub Actions
-    // tự sinh key mới nên Android không cho cài đè (lỗi INSTALL_FAILED_UPDATE_INCOMPATIBLE).
-    // Keystore lưu dạng base64 trong repo (debug.keystore.b64) vì file nhị phân
-    // không đẩy qua connector được; task dưới giải mã ra debug.keystore trước khi build.
-    // Đây là key DEBUG (alias androiddebugkey, mật khẩu android), hạn tới 2054.
-    val decodeDebugKeystore by tasks.registering {
-        doLast {
-            val b64File = layout.projectDirectory.file("../debug.keystore.b64").asFile
-            val outFile = layout.projectDirectory.file("../debug.keystore").asFile
-            if (!outFile.exists()) {
-                outFile.writeBytes(java.util.Base64.getMimeDecoder().decode(b64File.readText()))
-            }
-        }
-    }
-    tasks.named("preBuild") { dependsOn(decodeDebugKeystore) }
-
     signingConfigs {
-        create("debug") {
+        // getByName: config debug đã có sẵn do AGP tạo, chỉ sửa lại key;
+        // dùng create("debug") sẽ lỗi trùng tên.
+        getByName("debug") {
             storeFile = file("../debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
@@ -37,8 +39,8 @@ android {
         applicationId = "com.example.cubetimer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20
-        versionName = "3.0"
+        versionCode = 21
+        versionName = "3.1"
     }
 
     buildTypes {

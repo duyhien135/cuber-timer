@@ -947,10 +947,10 @@ const $ = function (sel) { return document.querySelector(sel); };
 function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
 function loadLadder() {
-  try {
-    const l = JSON.parse(localStorage.getItem(LS_LADDER) || '{}');
-    if (typeof l.rung === 'number' && l.rung >= 0 && l.rung < LADDER.length) return { rung: l.rung };
-  } catch (e) {}
+  // Bậc thang TẠM ĐÓNG BĂNG ở 13s theo ý cậu (20/11/2026): mỗi ngày mục
+  // tiêu vẫn là 5 lần liên tiếp dưới 13s, chưa xuống 12,5s/12s. Rung đã
+  // lưu (nếu có) bị bỏ qua nên hôm sau tự về 13s. Muốn mở lại bậc thang
+  // thì khôi phục đoạn đọc rung ở đây + đoạn nâng rung trong checkDailyGoal.
   return { rung: 0 };
 }
 function saveLadder() {
@@ -1165,12 +1165,13 @@ function hideGoalOverlay() {
   $('#goal-overlay').classList.add('hidden');
   if (goalOverlayTimer) { clearTimeout(goalOverlayTimer); goalOverlayTimer = null; }
 }
-// Mốc mục tiêu ngày hiện tại theo bậc thang (13 -> 10).
+// Mốc mục tiêu ngày: luôn là 13s (bậc thang đang đóng băng ở rung 0).
 function ladderTarget() { return LADDER[ladder.rung]; }
 // Hiển thị mốc kiểu Việt Nam: 12.5 -> "12,5".
 function fmtTarget(t) { return String(t).replace('.', ','); }
-// Sau mỗi lượt giải Full: đủ 5 lần liên tiếp dưới mốc hiện tại trong ngày
-// thì chúc mừng 1 lần, tự nâng lên mốc tiếp theo và cập nhật chuỗi ngày.
+// Sau mỗi lượt giải Full: đủ 5 lần liên tiếp dưới 13s trong ngày thì chúc
+// mừng 1 lần và cập nhật chuỗi ngày. Mục tiêu reset theo ngày, luôn là
+// dưới 13s (bậc thang đang đóng băng, chưa tự nâng mốc).
 // Trả về true nếu vừa hoàn thành mục tiêu trong lượt này.
 function checkDailyGoal() {
   refreshDaily();
@@ -1181,10 +1182,7 @@ function checkDailyGoal() {
     daily.target = target;
     saveDaily();
     updateStreak();
-    const next = ladder.rung < LADDER.length - 1 ? LADDER[ladder.rung + 1] : null;
-    if (next !== null) { ladder.rung++; saveLadder(); }
-    showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>5 lần liên tiếp dưới ' + fmtTarget(target) + 's' +
-      (next !== null ? '<br>Mục tiêu tiếp theo: dưới ' + fmtTarget(next) + 's' : '<br>Đã chạm tới sub-10! 🏆'));
+    showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>5 lần liên tiếp dưới ' + fmtTarget(target) + 's');
     return true;
   }
   return false;
@@ -1386,6 +1384,40 @@ function beep() {
     osc.stop(audioCtx.currentTime + 0.15);
   } catch (e) {}
 }
+// Tiếng "cạch" như gõ phím cơ mỗi lần nhấn ngón tay xuống: 1 chùm nhiễu
+// ngắn qua bandpass (tiếng cạch sắc) + 1 sóng sin trầm rớt tần số (tiếng
+// phím chạm đáy). Âm to rõ theo ý cậu (gain 0,9 / 0,5).
+function playKeyClick() {
+  ensureAudio();
+  if (!audioCtx) return;
+  try {
+    const t = audioCtx.currentTime;
+    const len = Math.floor(audioCtx.sampleRate * 0.05); // 50ms nhiễu
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 2800;
+    bp.Q.value = 0.8;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    src.connect(bp); bp.connect(g); g.connect(audioCtx.destination);
+    src.start(t);
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 0.06);
+    const og = audioCtx.createGain();
+    og.gain.setValueAtTime(0.5, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(og); og.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.07);
+  } catch (e) {}
+}
 
 // Rung cảnh báo khi nhìn trước còn 7s / 3s (giây thứ 8 và 12).
 // Ưu tiên cầu native của app (navigator.vibrate không ăn trên một số máy),
@@ -1575,8 +1607,7 @@ function renderGoalStatus() {
   const t = ladderTarget();
   if (daily.done) {
     const doneTarget = (typeof daily.target === 'number' ? daily.target : t);
-    const suffix = doneTarget <= 10 ? ' · Đã chạm sub-10! 🏆' : ' · Tiếp theo: dưới ' + fmtTarget(t) + 's';
-    el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới ' + fmtTarget(doneTarget) + 's)' + suffix;
+    el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới ' + fmtTarget(doneTarget) + 's)';
   } else {
     el.textContent = '⏳ Chuỗi dưới ' + fmtTarget(t) + 's hiện tại: ' + streakCountIn(modeSolves('full'), t) + '/5';
   }
@@ -1822,6 +1853,12 @@ document.addEventListener('pointerup', function (e) {
 // Nhấn giữ 0,6s khi đang chạy (Tách bước bật): dừng ngay, khỏi cần chạm
 // đủ 3 lần tách — lối thoát khi quên tách hoặc muốn bỏ lượt.
 document.addEventListener('pointerdown', function (e) {
+  // Tiếng "cạch" như gõ phím mỗi lần nhấn ngón tay xuống (chỉ ở màn Timer,
+  // không tính bấm nút/modal/ô nhập).
+  if (currentView === 'timer' && !modalOpen() && !inputFocused() &&
+      !e.target.closest('button, a, input, select, textarea, label')) {
+    playKeyClick();
+  }
   lpStopFired = false;
   if (phase !== 'running' || !settings.splitMode || (settings.mode || 'full') !== 'full') return;
   if (modalOpen() || inputFocused()) return;

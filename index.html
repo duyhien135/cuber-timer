@@ -39,8 +39,14 @@
   /* Khung scramble kiểu đèn LED PC: viền đổi màu liên tục. */
   .scramble-frame {
     border: 3px solid #ff5252; border-radius: 16px; padding: 6px 12px;
-    animation: ledCycle 6s linear infinite;
+    animation: ledCycle 6s linear infinite; cursor: pointer;
   }
+  /* Dòng gợi ý nhỏ dưới scramble: bấm vào scramble để xem gợi ý cross + F2L. */
+  .scramble-hint { text-align: center; font-size: 12px; color: #999; margin-top: 4px; }
+  /* Nội dung panel gợi ý cross + F2L (v3.4). */
+  .hint-sec { margin: 12px 0; font-size: 15px; line-height: 1.5; }
+  .hint-alg { font-family: 'SF Mono', Consolas, monospace; font-weight: 700; font-size: 17px; margin-top: 4px; word-break: break-word; }
+  .hint-alt { font-size: 14px; color: #555; margin-top: 4px; }
   @keyframes ledCycle {
     0% { border-color: #ff5252; box-shadow: 0 0 10px rgba(255,82,82,0.35); }
     17% { border-color: #ffab00; box-shadow: 0 0 10px rgba(255,171,0,0.35); }
@@ -232,7 +238,7 @@
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
   <div id="mode-chips" class="mode-chips hide-while-running"></div>
-  <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div></div>
+  <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div><div id="scramble-hint" class="scramble-hint">💡 Bấm vào scramble để xem gợi ý cross + F2L</div></div>
   <div id="record-box" class="record-box"><div class="rb-title"></div><div class="rb-sub"></div></div>
   <div id="timer-zone">
     <div id="clock" class="clock">0:00.00</div>
@@ -456,6 +462,16 @@
     <div id="summary-body"></div>
     <div class="modal-row">
       <button id="summary-close" class="primary">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div id="hint-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3>💡 Gợi ý cross + F2L</h3>
+    <div id="hint-body"></div>
+    <div class="modal-row">
+      <button id="hint-close" class="primary">Đóng</button>
     </div>
   </div>
 </div>
@@ -1908,6 +1924,9 @@ function statsRowHTML() {
 
 function renderTimer() {
   $('#scramble').textContent = currentScramble;
+  // Dòng gợi ý "bấm vào scramble" chỉ có ý nghĩa ở Full/F2L/Slow.
+  var m = settings.mode || 'full';
+  $('#scramble-hint').classList.toggle('hidden', m !== 'full' && m !== 'f2l' && m !== 'slow');
   $('#stats-row').innerHTML = statsRowHTML();
   updateClock();
 }
@@ -1942,6 +1961,7 @@ function modalOpen() {
     !$('#settings-modal').classList.contains('hidden') ||
     !$('#summary-modal').classList.contains('hidden') ||
     !$('#backup-modal').classList.contains('hidden') ||
+    !$('#hint-modal').classList.contains('hidden') ||
     !$('#goal-overlay').classList.contains('hidden');
 }
 function inputFocused() {
@@ -2393,6 +2413,674 @@ function renderRecog() {
 }
 
 /* =====================================================================
+   PHẦN 5C: GỢI Ý CROSS + CẶP F2L (v3.4) — tính trong Web Worker
+   ===================================================================== */
+// HINT_WORKER_SRC: mã nguồn Worker = cube-sim/simulator.js +
+// cube-sim/solver.js + cầu nối onmessage. Được chèn nguyên văn bằng script
+// inject-hints-worker.py — KHÔNG sửa tay đoạn này, sửa ở cube-sim rồi chạy
+// lại script. Worker tạo từ Blob URL vì app chỉ có 1 file.
+const HINT_WORKER_SRC = `// Cube Timer — mô phỏng khối Rubik 3x3 (mô hình cubie, quy ước Kociemba).
+// JS thuần, không dependency, không import/export — dán thẳng vào index.html được.
+//
+// Góc:  0=URF 1=UFL 2=ULB 3=UBR 4=DFR 5=DLF 6=DBL 7=DRB
+// Cạnh: 0=UR 1=UF 2=UL 3=UB 4=DR 5=DF 6=DL 7=DB 8=FR 9=FL 10=BL 11=BR
+// state = { cp:[8], co:[8], ep:[12], eo:[12] }
+//   cp[i] = góc nào đang ở vị trí i; co[i] = hướng của góc đó (0..2)
+//   ep[j] = cạnh nào đang ở vị trí j; eo[j] = hướng của cạnh đó (0..1)
+
+// Trạng thái solved.
+function solvedState() {
+  return {
+    cp: [0, 1, 2, 3, 4, 5, 6, 7],
+    co: [0, 0, 0, 0, 0, 0, 0, 0],
+    ep: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  };
+}
+
+// Bảng nước cơ bản (Kociemba). Khi áp nước:
+//   new_cp[i] = old_cp[cp[i]]; new_co[i] = (old_co[cp[i]] + co[i]) % 3
+//   new_ep[j] = old_ep[ep[j]]; new_eo[j] = (old_eo[ep[j]] + eo[j]) % 2
+// M: lớp giữa, cùng chiều với L — chỉ xáo 4 cạnh giữa (UF, UB, DF, DB)
+// và lật hướng chúng; góc không đổi.
+const MOVE_TABLES = {
+  U: { cp: [3, 0, 1, 2, 4, 5, 6, 7], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [3, 0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  R: { cp: [4, 1, 2, 0, 7, 5, 6, 3], co: [2, 0, 0, 1, 1, 0, 0, 2],
+       ep: [8, 1, 2, 3, 11, 5, 6, 7, 4, 9, 10, 0], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  F: { cp: [1, 5, 2, 3, 0, 4, 6, 7], co: [1, 2, 0, 0, 2, 1, 0, 0],
+       ep: [0, 9, 2, 3, 4, 8, 6, 7, 1, 5, 10, 11], eo: [0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0] },
+  D: { cp: [0, 1, 2, 3, 5, 6, 7, 4], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [0, 1, 2, 3, 5, 6, 7, 4, 8, 9, 10, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  L: { cp: [0, 2, 6, 3, 4, 1, 5, 7], co: [0, 1, 2, 0, 0, 2, 1, 0],
+       ep: [0, 1, 10, 3, 4, 5, 9, 7, 8, 2, 6, 11], eo: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  B: { cp: [0, 1, 3, 7, 4, 5, 2, 6], co: [0, 0, 1, 2, 0, 0, 2, 1],
+       ep: [0, 1, 2, 11, 4, 5, 6, 10, 8, 9, 3, 7], eo: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1] },
+  M: { cp: [0, 1, 2, 3, 4, 5, 6, 7], co: [0, 0, 0, 0, 0, 0, 0, 0],
+       ep: [0, 3, 2, 7, 4, 1, 6, 5, 8, 9, 10, 11], eo: [0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0] }
+};
+
+function cloneState(s) {
+  return { cp: s.cp.slice(), co: s.co.slice(), ep: s.ep.slice(), eo: s.eo.slice() };
+}
+
+// Áp 1 nước cơ bản (không hậu tố) lên state. Mutate state truyền vào.
+function applyBaseMove(s, face) {
+  const t = MOVE_TABLES[face];
+  const cp = [], co = [], ep = [], eo = [];
+  for (let i = 0; i < 8; i++) {
+    cp[i] = s.cp[t.cp[i]];
+    co[i] = (s.co[t.cp[i]] + t.co[i]) % 3;
+  }
+  for (let j = 0; j < 12; j++) {
+    ep[j] = s.ep[t.ep[j]];
+    eo[j] = (s.eo[t.ep[j]] + t.eo[j]) % 2;
+  }
+  s.cp = cp; s.co = co; s.ep = ep; s.eo = eo;
+  return s;
+}
+
+// Áp 1 token nước, vd "R", "R'", "R2". Hậu tố '' = 1 lần, '2' = 2 lần, "'" = 3 lần.
+function applyMoveToken(s, token) {
+  const face = token.charAt(0);
+  const suffix = token.slice(1);
+  const times = suffix === '2' ? 2 : suffix === "'" ? 3 : 1;
+  for (let k = 0; k < times; k++) applyBaseMove(s, face);
+  return s;
+}
+
+// Áp chuỗi nước cách nhau bằng khoảng trắng. KHÔNG mutate state gốc, trả state mới.
+function applyAlg(state, alg) {
+  const s = cloneState(state);
+  const tokens = alg.trim().split(/\\s+/);
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i]) applyMoveToken(s, tokens[i]);
+  }
+  return s;
+}
+
+// Đảo ngược alg: đảo thứ tự + đảo từng nước (X <-> X', X2 giữ nguyên).
+function invertAlg(alg) {
+  const tokens = alg.trim().split(/\\s+/).filter(Boolean);
+  const out = [];
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const t = tokens[i];
+    const suffix = t.slice(1);
+    if (suffix === "'") out.push(t.charAt(0));
+    else if (suffix === '2') out.push(t);
+    else out.push(t + "'");
+  }
+  return out.join(' ');
+}
+
+function isSolved(s) {
+  for (let i = 0; i < 8; i++) if (s.cp[i] !== i || s.co[i] !== 0) return false;
+  for (let j = 0; j < 12; j++) if (s.ep[j] !== j || s.eo[j] !== 0) return false;
+  return true;
+}
+
+// F2L nguyên vẹn: góc tầng D (4-7) và cạnh tầng D + tầng giữa (4-11)
+// đều đúng vị trí và đúng hướng.
+function isF2LIntact(s) {
+  for (let i = 4; i < 8; i++) if (s.cp[i] !== i || s.co[i] !== 0) return false;
+  for (let j = 4; j < 12; j++) if (s.ep[j] !== j || s.eo[j] !== 0) return false;
+  return true;
+}
+
+// Chỉ hoán vị tầng cuối (trường hợp PLL): F2L nguyên vẹn, mọi mảnh tầng cuối
+// đúng hướng, và state khác solved (tức tầng cuối thực sự bị hoán vị).
+function isLLPermutationOnly(s) {
+  if (!isF2LIntact(s)) return false;
+  for (let i = 0; i < 4; i++) if (s.co[i] !== 0 || s.eo[i] !== 0) return false;
+  return !isSolved(s);
+}
+
+// Chỉ sai hướng tầng cuối (trường hợp OLL thuần): F2L nguyên vẹn, mọi mảnh
+// đúng vị trí, và có hướng tầng cuối bị sai.
+function isLLOrientationOnly(s) {
+  if (!isF2LIntact(s)) return false;
+  for (let i = 0; i < 8; i++) if (s.cp[i] !== i) return false;
+  for (let j = 0; j < 12; j++) if (s.ep[j] !== j) return false;
+  for (let k = 0; k < 4; k++) if (s.co[k] !== 0 || s.eo[k] !== 0) return true;
+  return false;
+}
+
+// --- Trợ giúp cho OLL (thêm 21/11/2026) ---
+// Trạng thái định hướng thuần: giữ nguyên hướng (co/eo), lược hoán vị
+// (cp/ep về identity). Dùng để vẽ hình case OLL chuẩn trong drill nhận diện:
+// alg OLL chuẩn khi áp nghịch đảo vào solved cho đúng mẫu định hướng của case
+// nhưng kèm hoán vị tầng cuối; lược hoán vị thì hình mới khớp sơ đồ OLL chuẩn.
+function pureOriState(s) {
+  const p = solvedState();
+  p.co = s.co.slice();
+  p.eo = s.eo.slice();
+  return p;
+}
+// Tầng cuối đã định hướng đúng hết chưa (vị trí thì kệ — PLL sửa sau).
+function llOriented(s) {
+  for (let k = 0; k < 4; k++) if (s.co[k] !== 0 || s.eo[k] !== 0) return false;
+  return true;
+}
+// Chữ ký định hướng chuẩn tắc (tới AUF): case OLL chỉ xác định tới phép quay
+// mặt U, nên xoay vòng mảng hướng (co[0..3], eo[0..3]) rồi lấy nhỏ nhất.
+// LƯU Ý: không dùng applyAlg(s, 'U') — nước U còn hoán vị mảnh, sai mục đích.
+function canonOriSig(s) {
+  const co = s.co.slice(0, 4), eo = s.eo.slice(0, 4);
+  let best = null;
+  for (let k = 0; k < 4; k++) {
+    const c = [co[(0 - k + 8) % 4], co[(1 - k + 8) % 4], co[(2 - k + 8) % 4], co[(3 - k + 8) % 4]];
+    const e = [eo[(0 - k + 8) % 4], eo[(1 - k + 8) % 4], eo[(2 - k + 8) % 4], eo[(3 - k + 8) % 4]];
+    const g = c.join('') + '|' + e.join('');
+    if (best === null || g < best) best = g;
+  }
+  return best;
+}
+
+// --- Chuyển state sang 54 mặt (facelets) để vẽ hình khối ---
+// Thứ tự mặt: U 0-8, R 9-17, F 18-26, D 27-35, L 36-44, B 45-53.
+// Màu: U=W (trắng), R=R (đỏ), F=G (xanh lá), D=Y (vàng), L=O (cam), B=B (xanh dương).
+const CORNER_FACELET = [[8, 9, 20], [6, 18, 38], [0, 36, 47], [2, 45, 11],
+                        [29, 26, 15], [27, 44, 24], [33, 53, 42], [35, 17, 51]];
+const EDGE_FACELET = [[5, 10], [7, 19], [3, 37], [1, 46], [32, 16], [28, 25],
+                      [30, 43], [34, 52], [23, 12], [21, 41], [48, 39], [50, 14]];
+// Màu của từng cubie theo chỉ số mặt: 0=U, 1=R, 2=F, 3=D, 4=L, 5=B.
+const CORNER_COLOR = [[0, 1, 2], [0, 2, 4], [0, 4, 5], [0, 5, 1],
+                      [3, 2, 1], [3, 4, 2], [3, 5, 4], [3, 1, 5]];
+const EDGE_COLOR = [[0, 1], [0, 2], [0, 4], [0, 5], [3, 1], [3, 2],
+                    [3, 4], [3, 5], [2, 1], [2, 4], [5, 4], [5, 1]];
+const FACE_CHARS = ['W', 'R', 'G', 'Y', 'O', 'B'];
+
+function stateToFacelets(s) {
+  const f = new Array(54);
+  // 6 mặt trung tâm không nằm trong mô hình cubie — tô màu của mặt đó.
+  // (U=4, R=13, F=22, D=31, L=40, B=49.)
+  f[4] = 'W'; f[13] = 'R'; f[22] = 'G'; f[31] = 'Y'; f[40] = 'O'; f[49] = 'B';
+  for (let i = 0; i < 8; i++) {
+    const cubie = s.cp[i], ori = s.co[i];
+    for (let n = 0; n < 3; n++) {
+      f[CORNER_FACELET[i][(n + ori) % 3]] = FACE_CHARS[CORNER_COLOR[cubie][n]];
+    }
+  }
+  for (let j = 0; j < 12; j++) {
+    const cubie = s.ep[j], ori = s.eo[j];
+    for (let m = 0; m < 2; m++) {
+      f[EDGE_FACELET[j][(m + ori) % 2]] = FACE_CHARS[EDGE_COLOR[cubie][m]];
+    }
+  }
+  return f;
+}
+
+// solver.js — Gợi ý cross + cặp F2L cho Cube Timer v3.4.
+// JS thuần, không dependency, không import/export — dán thẳng vào index.html
+// (Worker Blob) được. Phụ thuộc simulator.js (MOVE_TABLES, solvedState,
+// applyAlg, cloneState).
+// QUY ƯỚC VIẾT: KHÔNG dùng backtick hay dãy đô-la + ngoặc nhọn mở
+// trong file này, để nhúng nguyên văn vào template literal trong index.html.
+//
+// Cross trắng ở mặt dưới (D): 4 cạnh DR, DF, DL, DB (cubie 4-7) đúng vị
+// trí + đúng hướng. Bảng khoảng cách BFS: 11880 hoán vị vị trí x 16 hướng
+// = 190080 trạng thái; lời giải tối ưu tối đa 8 bước HTM.
+// Cặp F2L: IDA* trên state đầy đủ, heuristic = max(khoảng cách cặp
+// góc-cạnh (bảng 24x24, bỏ qua cross), khoảng cách cross) — admissible
+// vì lời giải vừa phải lắp cặp vừa phải giữ cross. Mục tiêu: cặp vào đúng
+// slot VÀ cross vẫn đúng sau khi áp toàn bộ lời giải. (Lưu ý: từng nước
+// đi riêng lẻ có thể phá cross tạm thời rồi lắp lại — vd R U R' — nên
+// "giữ nguyên cross" hiểu là toàn bộ lời giải giữ cross, không phải từng
+// nước; chỉ có nước U mới giữ cross từng nước một.)
+
+// ---------- Bảng nước cho 18 token (suy ra từ MOVE_TABLES) ----------
+// Mỗi nước có: posE[12] (vị trí cũ -> vị trí mới của cạnh),
+// flipE[12] (lật hướng tại vị trí MỚI), posC[8], addC[8] (cộng hướng
+// tại vị trí mới, mod 3). Suy ra từ quy ước applyBaseMove:
+//   new_ep[j] = old_ep[t.ep[j]] -> cạnh ở vị trí cũ t.ep[j] sang vị trí j,
+//   new_eo[j] = old_eo[t.ep[j]] + t.eo[j].
+var SOLVER_FACES = ['U', 'D', 'R', 'L', 'F', 'B'];
+var SOLVER_TOKENS = [];
+var SOLVER_MOVE_MAPS = (function buildMoveMaps() {
+  var base = {};
+  SOLVER_FACES.forEach(function (f) {
+    var t = MOVE_TABLES[f];
+    var posE = new Array(12), flipE = new Array(12);
+    var posC = new Array(8), addC = new Array(8);
+    for (var j = 0; j < 12; j++) { posE[t.ep[j]] = j; flipE[j] = t.eo[j]; }
+    for (var i = 0; i < 8; i++) { posC[t.cp[i]] = i; addC[i] = t.co[i]; }
+    base[f] = { posE: posE, flipE: flipE, posC: posC, addC: addC };
+  });
+  function compose(a, b) { // áp a rồi b
+    var posE = new Array(12), flipE = new Array(12);
+    var posC = new Array(8), addC = new Array(8);
+    for (var p = 0; p < 12; p++) {
+      var mid = a.posE[p], np = b.posE[mid];
+      posE[p] = np;
+      flipE[np] = (a.flipE[mid] + b.flipE[np]) % 2;
+    }
+    for (var q = 0; q < 8; q++) {
+      var mid2 = a.posC[q], np2 = b.posC[mid2];
+      posC[q] = np2;
+      addC[np2] = (a.addC[mid2] + b.addC[np2]) % 3;
+    }
+    return { posE: posE, flipE: flipE, posC: posC, addC: addC };
+  }
+  var maps = {};
+  SOLVER_FACES.forEach(function (f) {
+    var b1 = base[f];
+    var b2 = compose(b1, b1);
+    var b3 = compose(b2, b1);
+    maps[f] = b1;
+    maps[f + '2'] = b2;
+    maps[f + "'"] = b3;
+    SOLVER_TOKENS.push(f, f + "'", f + '2');
+  });
+  return maps;
+})();
+
+// ---------- Cross: mã hoá trạng thái ----------
+// 4 cạnh cross theo thứ tự cố định: DR(4), DF(5), DL(6), DB(7).
+// index = permIndex * 16 + oriBits; permIndex là mã Lehmer của hoán vị
+// 4 vị trí trong 12 (P(12,4) = 11880).
+var CROSS_STATE_COUNT = 11880 * 16; // 190080
+
+function crossPosOf(s) {
+  var pos = [0, 0, 0, 0], ori = [0, 0, 0, 0];
+  for (var j = 0; j < 12; j++) {
+    var c = s.ep[j];
+    if (c >= 4 && c <= 7) { var k = c - 4; pos[k] = j; ori[k] = s.eo[j]; }
+  }
+  return { pos: pos, ori: ori };
+}
+function crossIndex(pos, ori) {
+  var p0 = pos[0], p1 = pos[1], p2 = pos[2], p3 = pos[3];
+  var c0 = p0;
+  var c1 = p1 - (p1 > p0 ? 1 : 0);
+  var c2 = p2 - (p2 > p0 ? 1 : 0) - (p2 > p1 ? 1 : 0);
+  var c3 = p3 - (p3 > p0 ? 1 : 0) - (p3 > p1 ? 1 : 0) - (p3 > p2 ? 1 : 0);
+  var perm = ((c0 * 11 + c1) * 10 + c2) * 9 + c3;
+  return perm * 16 + (ori[0] | (ori[1] << 1) | (ori[2] << 2) | (ori[3] << 3));
+}
+function decodeCrossIndex(idx, out) {
+  var perm = (idx / 16) | 0, bits = idx & 15;
+  var c3 = perm % 9; perm = (perm / 9) | 0;
+  var c2 = perm % 10; perm = (perm / 10) | 0;
+  var c1 = perm % 11; var c0 = (perm / 11) | 0;
+  var p0 = c0;
+  var p1 = c1 + (c1 >= p0 ? 1 : 0);
+  var lo = p0 < p1 ? p0 : p1, hi = p0 < p1 ? p1 : p0;
+  var p2 = c2; if (p2 >= lo) p2++; if (p2 >= hi) p2++;
+  // p3: phần tử thứ c3 trong các số còn lại sau khi loại p0, p1, p2.
+  var a = p0, b = p1, c = p2, t;
+  if (a > b) { t = a; a = b; b = t; }
+  if (b > c) { t = b; b = c; c = t; }
+  if (a > b) { t = a; a = b; b = t; }
+  var p3 = c3; if (p3 >= a) p3++; if (p3 >= b) p3++; if (p3 >= c) p3++;
+  out.pos[0] = p0; out.pos[1] = p1; out.pos[2] = p2; out.pos[3] = p3;
+  out.ori[0] = bits & 1; out.ori[1] = (bits >> 1) & 1;
+  out.ori[2] = (bits >> 2) & 1; out.ori[3] = (bits >> 3) & 1;
+}
+function crossIndexFromState(s) {
+  var cp = crossPosOf(s);
+  return crossIndex(cp.pos, cp.ori);
+}
+function applyCrossMove(pos, ori, token, outPos, outOri) {
+  var m = SOLVER_MOVE_MAPS[token];
+  for (var i = 0; i < 4; i++) {
+    var np = m.posE[pos[i]];
+    outPos[i] = np;
+    outOri[i] = (ori[i] + m.flipE[np]) % 2;
+  }
+}
+
+// ---------- Cross: bảng khoảng cách BFS ----------
+var crossDist = null;
+function buildCrossTable() {
+  if (crossDist) return crossDist;
+  var dist = new Uint8Array(CROSS_STATE_COUNT);
+  dist.fill(255);
+  var solvedIdx = crossIndex([4, 5, 6, 7], [0, 0, 0, 0]);
+  dist[solvedIdx] = 0;
+  var queue = new Int32Array(CROSS_STATE_COUNT);
+  var head = 0, tail = 0;
+  queue[tail++] = solvedIdx;
+  var cur = { pos: [0, 0, 0, 0], ori: [0, 0, 0, 0] };
+  var np = [0, 0, 0, 0], no = [0, 0, 0, 0];
+  while (head < tail) {
+    var idx = queue[head++];
+    var d = dist[idx];
+    decodeCrossIndex(idx, cur);
+    for (var t = 0; t < 18; t++) {
+      applyCrossMove(cur.pos, cur.ori, SOLVER_TOKENS[t], np, no);
+      var nidx = crossIndex(np, no);
+      if (dist[nidx] === 255) { dist[nidx] = d + 1; queue[tail++] = nidx; }
+    }
+  }
+  crossDist = dist;
+  return dist;
+}
+
+// Giải cross tối ưu bằng cách đi xuống theo bảng khoảng cách.
+// Trả { moves, len, alts } — alts là tối đa 2 lời giải khác cùng độ dài
+// (đi từ các nước đầu khác nhau mà vẫn giảm khoảng cách).
+function solveCrossFromIndex(idx) {
+  var dist = buildCrossTable();
+  var d = dist[idx];
+  if (d === 0) return { moves: [], len: 0, alts: [] };
+  var cur = { pos: [0, 0, 0, 0], ori: [0, 0, 0, 0] };
+  var np = [0, 0, 0, 0], no = [0, 0, 0, 0];
+  var firsts = [];
+  decodeCrossIndex(idx, cur);
+  for (var t = 0; t < 18; t++) {
+    applyCrossMove(cur.pos, cur.ori, SOLVER_TOKENS[t], np, no);
+    if (dist[crossIndex(np, no)] === d - 1) firsts.push(SOLVER_TOKENS[t]);
+  }
+  function complete(first) {
+    var seq = [first];
+    decodeCrossIndex(idx, cur);
+    applyCrossMove(cur.pos, cur.ori, first, np, no);
+    var ci = crossIndex(np, no);
+    while (dist[ci] > 0) {
+      decodeCrossIndex(ci, cur);
+      var dd = dist[ci];
+      var done = false;
+      for (var t2 = 0; t2 < 18; t2++) {
+        applyCrossMove(cur.pos, cur.ori, SOLVER_TOKENS[t2], np, no);
+        if (dist[crossIndex(np, no)] === dd - 1) {
+          seq.push(SOLVER_TOKENS[t2]);
+          ci = crossIndex(np, no);
+          done = true;
+          break;
+        }
+      }
+      if (!done) break; // không xảy ra nếu bảng đúng
+    }
+    return seq;
+  }
+  var main = complete(firsts[0]);
+  var alts = [];
+  for (var i = 1; i < firsts.length && alts.length < 2; i++) {
+    var alt = complete(firsts[i]);
+    if (alt.join(' ') !== main.join(' ')) alts.push(alt);
+  }
+  return { moves: main, len: main.length, alts: alts };
+}
+function solveCross(state) {
+  return solveCrossFromIndex(crossIndexFromState(state));
+}
+function isCrossSolved(s) {
+  for (var j = 4; j < 8; j++) if (s.ep[j] !== j || s.eo[j] !== 0) return false;
+  return true;
+}
+
+// ---------- Cặp F2L: bảng khoảng cách cặp góc-cạnh ----------
+// Slot theo thứ tự ưu tiên khi hoà: FR, FL, BR, BL.
+// corner/edge là cubie; cpos/epos là vị trí đúng của slot đó.
+var F2L_SLOTS = [
+  { name: 'FR', corner: 4, cpos: 4, edge: 8, epos: 8 },
+  { name: 'FL', corner: 5, cpos: 5, edge: 9, epos: 9 },
+  { name: 'BR', corner: 7, cpos: 7, edge: 11, epos: 11 },
+  { name: 'BL', corner: 6, cpos: 6, edge: 10, epos: 10 }
+];
+var pairTables = null; // [slotIdx] -> Uint8Array(576), index = (cpos*3+cori)*24 + (epos*2+eori)
+function buildPairTables() {
+  if (pairTables) return pairTables;
+  pairTables = [];
+  for (var si = 0; si < 4; si++) {
+    var slot = F2L_SLOTS[si];
+    var tab = new Uint8Array(576);
+    tab.fill(255);
+    var start = (slot.cpos * 3) * 24 + (slot.epos * 2);
+    tab[start] = 0;
+    var queue = new Int32Array(576);
+    var head = 0, tail = 0;
+    queue[tail++] = start;
+    while (head < tail) {
+      var idx = queue[head++];
+      var d = tab[idx];
+      var cc = (idx / 24) | 0, ec = idx % 24;
+      var cpos = (cc / 3) | 0, cori = cc % 3;
+      var epos = (ec / 2) | 0, eori = ec % 2;
+      for (var t = 0; t < 18; t++) {
+        var m = SOLVER_MOVE_MAPS[SOLVER_TOKENS[t]];
+        var ncp = m.posC[cpos], nco = (cori + m.addC[ncp]) % 3;
+        var nep = m.posE[epos], neo = (eori + m.flipE[nep]) % 2;
+        var nidx = (ncp * 3 + nco) * 24 + (nep * 2 + neo);
+        if (tab[nidx] === 255) { tab[nidx] = d + 1; queue[tail++] = nidx; }
+      }
+    }
+    pairTables.push(tab);
+  }
+  return pairTables;
+}
+function pairHeuristic(s, slotIdx) {
+  var slot = F2L_SLOTS[slotIdx];
+  var cp = -1, co = 0, ep = -1, eo = 0;
+  for (var i = 0; i < 8; i++) if (s.cp[i] === slot.corner) { cp = i; co = s.co[i]; break; }
+  for (var j = 0; j < 12; j++) if (s.ep[j] === slot.edge) { ep = j; eo = s.eo[j]; break; }
+  return pairTables[slotIdx][(cp * 3 + co) * 24 + (ep * 2 + eo)];
+}
+function isPairSolved(s, slotIdx) {
+  var slot = F2L_SLOTS[slotIdx];
+  return s.cp[slot.cpos] === slot.corner && s.co[slot.cpos] === 0 &&
+    s.ep[slot.epos] === slot.edge && s.eo[slot.epos] === 0;
+}
+// Heuristic cho IDA*: max(khoảng cách cặp, khoảng cách cross). Cả 2 đều
+// là cận dưới của lời giải thật (phải lắp cặp VÀ giữ cross) nên max
+// admissible; h = 0 đúng khi cặp đã vào slot và cross đã đúng.
+function pairSearchHeuristic(s, slotIdx) {
+  var ph = pairHeuristic(s, slotIdx);
+  var ch = crossDist[crossIndexFromState(s)];
+  return ph > ch ? ph : ch;
+}
+
+// ---------- Nước đi tại chỗ (cho IDA*) ----------
+var _bcp = [0, 0, 0, 0, 0, 0, 0, 0], _bco = [0, 0, 0, 0, 0, 0, 0, 0];
+var _bep = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], _beo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+function applyBaseInPlace(s, face) {
+  var t = MOVE_TABLES[face];
+  for (var i = 0; i < 8; i++) { _bcp[i] = s.cp[t.cp[i]]; _bco[i] = (s.co[t.cp[i]] + t.co[i]) % 3; }
+  for (var j = 0; j < 12; j++) { _bep[j] = s.ep[t.ep[j]]; _beo[j] = (s.eo[t.ep[j]] + t.eo[j]) % 2; }
+  for (var i2 = 0; i2 < 8; i2++) { s.cp[i2] = _bcp[i2]; s.co[i2] = _bco[i2]; }
+  for (var j2 = 0; j2 < 12; j2++) { s.ep[j2] = _bep[j2]; s.eo[j2] = _beo[j2]; }
+}
+function applyTokenInPlace(s, token) {
+  var face = token.charAt(0), suf = token.slice(1);
+  var times = suf === '2' ? 2 : suf === "'" ? 3 : 1;
+  for (var k = 0; k < times; k++) applyBaseInPlace(s, face);
+}
+function undoTokenInPlace(s, token) {
+  var face = token.charAt(0), suf = token.slice(1);
+  var times = suf === '2' ? 2 : suf === "'" ? 1 : 3;
+  for (var k = 0; k < times; k++) applyBaseInPlace(s, face);
+}
+
+// ---------- IDA* cho 1 slot ----------
+// Trả mảng nước ngắn nhất lắp cặp vào slot mà giữ cross, hoặc null nếu
+// không có trong maxDepth / vượt nodeCap.
+var PAIR_MAX_DEPTH = 9;
+var PAIR_NODE_CAP = 200000;
+
+function idaPair(startState, slotIdx, maxDepth, nodeCap) {
+  var s = cloneState(startState);
+  if (pairSearchHeuristic(s, slotIdx) === 0) return [];
+  var h0 = pairSearchHeuristic(s, slotIdx);
+  var nodes = { n: 0 };
+  var path = [];
+  var aborted = false;
+  function dfs(g, bound, prevFace) {
+    if (aborted) return false;
+    if (++nodes.n > nodeCap) { aborted = true; return false; }
+    var h = pairSearchHeuristic(s, slotIdx);
+    if (g + h > bound) return false;
+    if (h === 0) return true;
+    if (g === bound) return false;
+    var cands = [];
+    for (var t = 0; t < 18; t++) {
+      var tok = SOLVER_TOKENS[t];
+      if (tok.charAt(0) === prevFace) continue;
+      applyTokenInPlace(s, tok);
+      var nh = pairSearchHeuristic(s, slotIdx);
+      undoTokenInPlace(s, tok);
+      if (g + 1 + nh <= bound) cands.push({ tok: tok, h: nh });
+    }
+    cands.sort(function (a, b) { return a.h - b.h; });
+    for (var i = 0; i < cands.length; i++) {
+      applyTokenInPlace(s, cands[i].tok);
+      path.push(cands[i].tok);
+      if (dfs(g + 1, bound, cands[i].tok.charAt(0))) return true;
+      path.pop();
+      undoTokenInPlace(s, cands[i].tok);
+      if (aborted) return false;
+    }
+    return false;
+  }
+  for (var bound = h0; bound <= maxDepth; bound++) {
+    path.length = 0;
+    if (dfs(0, bound, '')) return path.slice();
+    if (aborted) return null;
+  }
+  return null;
+}
+
+// Chọn cặp ngắn nhất trong 4 slot; hoà thì ưu tiên FR > FL > BR > BL
+// (chỉ tìm slot sau khi nó có thể tốt hơn best hiện tại).
+function solveF2LPair(state) {
+  buildPairTables();
+  buildCrossTable();
+  var best = null;
+  for (var si = 0; si < 4; si++) {
+    var limit = best ? best.len - 1 : PAIR_MAX_DEPTH;
+    if (limit < 0) break;
+    if (pairSearchHeuristic(state, si) > limit) continue;
+    var sol = idaPair(state, si, limit, PAIR_NODE_CAP);
+    if (sol && (!best || sol.length < best.len)) {
+      best = { slot: F2L_SLOTS[si].name, slotIdx: si, moves: sol, len: sol.length };
+      if (best.len === 0) break;
+    }
+  }
+  return best;
+}
+
+// ---------- API chính ----------
+// scramble: chuỗi 20 nước kiểu WCA. Trả:
+// { cross: { moves, len, alts }, pair: { slot, moves, len } | null }
+var tablesReady = false;
+function ensureTables() {
+  if (tablesReady) return;
+  buildCrossTable();
+  buildPairTables();
+  tablesReady = true;
+}
+function solveHints(scramble) {
+  ensureTables();
+  var s0 = applyAlg(solvedState(), scramble);
+  var cross = solveCross(s0);
+  var s1 = cross.moves.length ? applyAlg(s0, cross.moves.join(' ')) : s0;
+  var pair = solveF2LPair(s1);
+  return {
+    cross: { moves: cross.moves, len: cross.len, alts: cross.alts },
+    pair: pair ? { slot: pair.slot, moves: pair.moves, len: pair.len } : null
+  };
+}
+
+// --- Cau noi Worker: nhan scramble, tra goi y cross + cap F2L ---
+self.onmessage = function (e) {
+  var d = e.data || {};
+  if (d.type !== 'solve' || typeof d.scramble !== 'string') return;
+  try {
+    var r = solveHints(d.scramble);
+    self.postMessage({ type: 'result', id: d.id, scramble: d.scramble, cross: r.cross, pair: r.pair });
+  } catch (err) {
+    self.postMessage({ type: 'error', id: d.id, scramble: d.scramble, message: String((err && err.message) || err) });
+  }
+};
+`;
+
+let hintWorker = null;
+let hintReqId = 0;
+let hintCache = {}; // scramble -> { cross, pair }
+let hintCurrentScramble = null;
+
+function getHintWorker() {
+  if (hintWorker) return hintWorker;
+  try {
+    var blob = new Blob([HINT_WORKER_SRC], { type: 'text/javascript' });
+    hintWorker = new Worker(URL.createObjectURL(blob));
+    hintWorker.onmessage = function (e) {
+      var d = e.data || {};
+      if (d.type === 'result') {
+        hintCache[d.scramble] = { cross: d.cross, pair: d.pair };
+        if (hintCurrentScramble === d.scramble && !$('#hint-modal').classList.contains('hidden')) {
+          renderHintBody(d.scramble);
+        }
+      } else if (d.type === 'error') {
+        if (hintCurrentScramble === d.scramble && !$('#hint-modal').classList.contains('hidden')) {
+          $('#hint-body').innerHTML = '<p class="note">Không tính được gợi ý: ' + escapeHtml(d.message || '') + '</p>';
+        }
+      }
+    };
+    hintWorker.onerror = function () {
+      if (!$('#hint-modal').classList.contains('hidden')) {
+        $('#hint-body').innerHTML = '<p class="note">Trình duyệt không chạy được tính nền, không tính được gợi ý.</p>';
+      }
+    };
+  } catch (err) {
+    hintWorker = null;
+  }
+  return hintWorker;
+}
+
+// Mở panel gợi ý cho scramble hiện tại. Mặc định panel ẩn; chỉ mở khi
+// bấm vào scramble. Chỉ có ý nghĩa ở chế độ Full/F2L/Slow (scramble đủ
+// 20 nước); ở OLL/PLL cross đã xong sẵn nên không mở.
+function openHintPanel() {
+  var mode = settings.mode || 'full';
+  if (mode !== 'full' && mode !== 'f2l' && mode !== 'slow') return;
+  hintCurrentScramble = currentScramble;
+  $('#hint-modal').classList.remove('hidden');
+  renderHintBody(currentScramble);
+  if (!hintCache[currentScramble]) {
+    var w = getHintWorker();
+    if (w) {
+      hintReqId++;
+      w.postMessage({ type: 'solve', id: hintReqId, scramble: currentScramble });
+    } else {
+      $('#hint-body').innerHTML = '<p class="note">Trình duyệt không chạy được tính nền, không tính được gợi ý.</p>';
+    }
+  }
+}
+function closeHintPanel() {
+  $('#hint-modal').classList.add('hidden');
+  hintCurrentScramble = null;
+}
+function renderHintBody(scramble) {
+  var html = '<div class="detail-line">Scramble: <b>' + escapeHtml(scramble) + '</b></div>';
+  var cached = hintCache[scramble];
+  if (!cached) {
+    html += '<p class="note">⏳ Đang tính gợi ý… (lần đầu có thể mất 1–2 giây để dựng bảng cross)</p>';
+    $('#hint-body').innerHTML = html;
+    return;
+  }
+  var c = cached.cross;
+  if (c.len === 0) {
+    html += '<div class="hint-sec"><b>➕ Cross trắng:</b> đã xong sẵn, không cần xoay.</div>';
+  } else {
+    html += '<div class="hint-sec"><b>➕ Cross trắng (' + c.len + ' bước):</b><div class="hint-alg">' + escapeHtml(c.moves.join(' ')) + '</div>';
+    for (var i = 0; i < c.alts.length; i++) {
+      html += '<div class="hint-alt">Cách khác cùng ' + c.len + ' bước: ' + escapeHtml(c.alts[i].join(' ')) + '</div>';
+    }
+    html += '</div>';
+  }
+  var p = cached.pair;
+  if (!p) {
+    html += '<div class="hint-sec"><b>🧩 Cặp F2L tiếp theo:</b> không có cặp ngắn (≤ 9 bước).</div>';
+  } else if (p.len === 0) {
+    html += '<div class="hint-sec"><b>🧩 Cặp F2L tiếp theo — slot ' + escapeHtml(p.slot) + ':</b> đã xong sẵn, không cần xoay.</div>';
+  } else {
+    html += '<div class="hint-sec"><b>🧩 Cặp F2L tiếp theo — slot ' + escapeHtml(p.slot) + ' (' + p.len + ' bước):</b><div class="hint-alg">' + escapeHtml(p.moves.join(' ')) + '</div></div>';
+  }
+  html += '<p class="note">Gợi ý tính từ scramble hiện tại, cross trắng ở mặt dưới. Đóng panel rồi bấm giờ như bình thường.</p>';
+  $('#hint-body').innerHTML = html;
+}
+
+/* =====================================================================
    PHẦN 6: SỰ KIỆN VÀ KHỞI ĐỘNG
    ===================================================================== */
 
@@ -2455,7 +3143,7 @@ document.addEventListener('touchend', function (e) {
 }, { passive: true });
 
 window.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { closeDetail(); closeSettings(); closeSummary(); hideGoalOverlay(); return; }
+  if (e.key === 'Escape') { closeDetail(); closeSettings(); closeSummary(); closeHintPanel(); hideGoalOverlay(); return; }
   if (inputFocused() || modalOpen()) return;
   if (currentView !== 'timer') return;
   if (e.repeat) return;
@@ -2512,6 +3200,22 @@ $('#btn-metro-toggle').addEventListener('click', function () {
 });
 $('#btn-summary').addEventListener('click', openSummary);
 $('#summary-close').addEventListener('click', closeSummary);
+$('#hint-close').addEventListener('click', closeHintPanel);
+// Bấm vào scramble: mở panel gợi ý cross + F2L (chỉ ở chế độ Full/F2L/
+// Slow và khi không đang chạy giờ). Chặn lan sự kiện để không kích hoạt
+// đồng hồ kiểu stackmat; ở chế độ OLL/PLL hoặc đang chạy thì để mặc định
+// (bấm giờ bình thường — scramble đó không có cross để gợi ý).
+$('#scramble').addEventListener('pointerup', function (e) {
+  var mode = settings.mode || 'full';
+  if (phase === 'running' || (mode !== 'full' && mode !== 'f2l' && mode !== 'slow')) return;
+  e.stopPropagation();
+  openHintPanel();
+});
+$('#scramble').addEventListener('pointerdown', function (e) {
+  var mode = settings.mode || 'full';
+  if (phase === 'running' || (mode !== 'full' && mode !== 'f2l' && mode !== 'slow')) return;
+  e.stopPropagation();
+});
 $('#btn-recog-new').addEventListener('click', recogNewCase);
 $('#btn-recog-gotit').addEventListener('click', recogGotIt);
 $('#btn-recog-pll').addEventListener('click', function () { setRecogType('pll'); });
@@ -2648,7 +3352,7 @@ $('#detail-delete').addEventListener('click', function () {
 });
 document.querySelectorAll('.modal').forEach(function (m) {
   m.addEventListener('click', function (e) {
-    if (e.target === m) { closeDetail(); closeSettings(); closeSummary(); }
+    if (e.target === m) { closeDetail(); closeSettings(); closeSummary(); closeHintPanel(); }
   });
 });
 

@@ -63,7 +63,9 @@
   .clock.running { color: #2e7d32; }
   .clock.warn-yellow { color: #ef6c00; }
   .clock.warn-red { color: #d32f2f; }
-  .clock.hidden-time { background: #fff; color: #d50000; padding: 0 16px; border-radius: 16px; }
+  .clock.hidden-time { background: #fff; color: #d50000; padding: 2px 16px 6px; border-radius: 16px; line-height: 1.15;
+    /* Chữ HIỂN phải dùng phông sans hệ thống: phông monospace của đồng hồ
+       không có chữ Ể nên dấu bị tách rời (lỗi cậu báo 21/11/2026). */ font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
   .status { margin-top: 6px; color: #d32f2f; font-size: 14px; min-height: 1.2em; text-align: center; }
   /* ---- Khung chat kỉ lục dưới scramble (giữ chỗ 2 dòng, ẩn khi chưa có) ---- */
   .record-box { min-height: 2.6em; margin: 8px 16px 0; border-radius: 12px; padding: 8px 12px; text-align: center; visibility: hidden; }
@@ -112,7 +114,7 @@
   }
   .solve-row:active { background: #f5f5f5; }
   .solve-row.selected { border-color: #d32f2f; background: #fdecea; }
-  /* Bong bóng xóa lượt giải ở góc trên-trái màn hình, hiện khi nhấn giữ chọn 1 thẻ. */
+  /* Bong bóng xóa lượt giải ở góc trên-trái màn hình, hiện khi chọn 1 thẻ. */
   #btn-delete-selected {
     position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; z-index: 6;
     background: #fdecea; color: #c62828; border: 1px solid #f5c6c6; border-radius: 12px;
@@ -136,8 +138,13 @@
   .modal-card h3 { margin-top: 0; }
   .modal-card textarea { width: 100%; background: #f9f9f9; color: #222; border: 1px solid #ddd; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; }
   .modal-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .file-label { display: inline-block; padding: 8px 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; font-size: 14px; }
   .detail-line { margin: 6px 0; font-size: 15px; }
   .detail-line b { font-family: 'SF Mono', Consolas, monospace; }
+  /* Nút chọn nguyên nhân lượt tệ trong modal chi tiết. */
+  .err-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+  .err-row button { padding: 5px 10px; font-size: 13px; border-radius: 999px; }
+  .err-row button.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
   label.check { display: flex; gap: 8px; align-items: center; padding: 8px 0; font-size: 16px; cursor: pointer; }
   label.check input { width: 18px; height: 18px; }
   .note { color: #888; font-size: 14px; }
@@ -182,10 +189,21 @@
   .solve-row .flag { position: absolute; top: 4px; right: 8px; font-size: 13px; }
   .solve-row.flagged { border-color: #ffcc80; }
   .streak-line { font-size: 14px; margin-bottom: 8px; color: #555; }
+  /* Checklist Lịch hôm nay: 4 mục theo guide, chạm để tick. */
+  .schedule-box { border-top: 1px solid #eee; margin-top: 4px; padding-top: 8px; }
+  .today-suggestion { font-size: 13px; color: #555; margin-top: 6px; line-height: 1.5; }
+  .schedule-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .sch-row { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-size: 14px; text-align: left; }
+  .sch-row:active { background: #eee; }
+  .sch-row.done { color: #2e7d32; }
+  .sch-check { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
   .split-line { font-size: 12px; color: #555; margin-top: 4px; text-align: right; line-height: 1.5; }
   /* ---- Màn hình Nhận diện PLL ---- */
   #recog-view { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; text-align: center; }
   .recog-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .recog-type { display: flex; gap: 8px; justify-content: center; margin: 6px 0 10px; }
+  .recog-type button { padding: 6px 16px; font-size: 14px; border-radius: 999px; }
+  .recog-type button.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
   .recog-sub { font-size: 14px; color: #888; margin-bottom: 16px; }
   .cube-net { display: inline-block; margin: 8px auto 16px; }
   .cube-net .net-row { display: flex; justify-content: center; }
@@ -195,10 +213,17 @@
   .recog-answer { font-size: 20px; font-weight: 700; min-height: 1.4em; margin: 8px 0; }
   .recog-answer small { display: block; font-size: 13px; color: #888; font-weight: 400; margin-top: 2px; }
   .recog-stats { font-size: 14px; color: #555; margin-top: 12px; line-height: 1.6; }
+  .recog-slow { font-size: 13px; color: #555; margin-top: 8px; line-height: 1.6; }
   .recog-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
   .recog-btns button.big { padding: 14px 22px; font-size: 17px; font-weight: 700; }
   .summary-line { margin: 6px 0; font-size: 15px; line-height: 1.5; }
   .summary-line b { font-family: 'SF Mono', Consolas, monospace; }
+  /* Biểu đồ Ao100 theo tuần: cột càng thấp càng tốt (thời gian càng ít). */
+  .wk-chart { display: flex; gap: 6px; align-items: flex-end; margin: 8px 0 4px; }
+  .wk-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-width: 0; }
+  .wk-fill { width: 100%; background: #2e7d32; border-radius: 3px 3px 0 0; }
+  .wk-val { font-size: 10px; font-family: 'SF Mono', Consolas, monospace; white-space: nowrap; }
+  .wk-lab { font-size: 10px; color: #777; white-space: nowrap; }
   label.check input[type=number] { width: 70px; padding: 6px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; }
 </style>
 </head>
@@ -228,13 +253,15 @@
   <div class="goal-box">
     <div class="goal-box-head">🎯 Mục tiêu hôm nay: <span id="goal-status"></span></div>
     <div id="streak-line" class="streak-line"></div>
+    <div id="schedule-box" class="schedule-box"></div>
+    <div id="today-suggestion" class="today-suggestion"></div>
     <button id="btn-summary">📊 Tổng kết buổi tập</button>
     <button id="btn-guide">📖 Cách luyện xuống sub-10</button>
     <div id="guide-content" class="guide-content hidden"><h4>1. Lộ trình: từ sub-13 xuống sub-10 cần gì</h4>
 <p>Ở mức sub-13/sub-14, tay bạn đã đủ nhanh — vấn đề không còn là xoay nhanh hơn mà là dừng ít hơn. Một lượt giải sub-10 chuẩn thường chia thế này: Cross 1–1,5 giây, F2L 5–5,5 giây, OLL 1,5–2 giây, PLL 1,5–2 giây. So với hiện tại, phần lớn 3 giây cần rút nằm ở F2L và ở các khoảng dừng giữa các bước, chứ không nằm ở tốc độ xoay. Thứ tự ưu tiên: (1) lookahead F2L, (2) cross + cặp đầu tiên, (3) học nốt full PLL rồi full OLL, (4) nhận diện trường hợp nhanh hơn.</p>
 
 <h4>2. F2L: lookahead là tất cả</h4>
-<p>F2L chiếm khoảng một nửa thời gian giải, nên đây là nơi rút được nhiều nhất. Nguyên tắc: mắt luôn nhìn cặp tiếp theo, tay giải cặp hiện tại bằng trí nhớ cơ bắp.</p>
+<p>Cross+F2L chiếm khoảng 2/3 thời gian giải — với số liệu của bạn, trung bình 9,3s trên tổng ~14s — nên đây là nơi rút được nhiều nhất. Nguyên tắc: mắt luôn nhìn cặp tiếp theo, tay giải cặp hiện tại bằng trí nhớ cơ bắp.</p>
 <ul>
 <li><strong>Slow solves:</strong> giải thật chậm (khoảng 1 nước/giây), chậm tới mức không bao giờ phải dừng. Khi đã giải chậm mà không pause được, tăng tốc dần. Có thể dùng metronome để giữ nhịp đều. Đây là bài tập lookahead chuẩn nhất.</li>
 <li><strong>Không nhìn cặp đang giải:</strong> tập nhìn một cặp rồi nhắm mắt giải nó, để tay tự nhớ đường đi và mắt rảnh rang tìm cặp tiếp theo.</li>
@@ -244,14 +271,21 @@
 <li><strong>Edge control:</strong> cách chèn cặp cuối cùng quyết định bạn gặp OLL nào. Chèn bằng sledgehammer (R' F R F') thay vì sexy move có thể tránh được các case OLL chấm (dot case) vừa dài vừa khó.</li>
 </ul>
 
-<h4>3. Cross và Cross+1</h4>
+<h4>3. Độ đều: ổn định trước, nhanh sau</h4>
+<p>Bạn dao động 11–19s giữa các lượt — biên độ gần 8 giây. Thu hẹp biên độ này quan trọng hơn là làm lượt nhanh nhất nhanh hơn nữa: một Ao5 13s mà các lượt đều quanh 13s tốt hơn nhiều so với Ao5 13s gồm 11s xen kẽ 18s, vì lượt 18s là dấu hiệu của pause dài, nhận diện chậm hoặc lỗi tay. Cách tập: thử thách Độ đều trong app — 10 lượt liên tiếp trong khoảng ±1,5s quanh trung bình (xem ở Tổng kết buổi tập) — và slow solve để loại bỏ pause. Đo độ đều bằng độ lệch chuẩn: hiện tại của bạn khoảng ±2,1s, mục tiêu đưa xuống dưới ±1,5s.</p>
+<ul>
+<li><strong>Đừng đuổi single:</strong> một lượt 11s may mắn không nói lên trình độ; Ao100 mới là trình độ thật.</li>
+<li><strong>Sửa lượt tệ, không sửa lượt tốt:</strong> mỗi lần giải trên 16s, nhớ lại xem mình dừng ở đâu — đó chính là chỗ cần drill.</li>
+</ul>
+
+<h4>4. Cross và Cross+1</h4>
 <p>Cross luôn giải được trong 8 nước trở xuống, ở mặt dưới. Dùng 15 giây inspection để lên kế hoạch toàn bộ cross trước khi bấm giờ, rồi trong lúc xoay cross thì mắt đã tìm cặp F2L đầu tiên. Nhiều cuber trên diễn đàn SpeedSolving nói cross+1 chính là điểm khác biệt giữa sub-10 và không sub-10: nếu chưa track được cả cặp, ít nhất hãy track 1 góc của cặp đầu tiên.</p>
 <ul>
 <li>Luyện cross không bấm giờ: xem scramble, nhẩm cách giải cross ngắn nhất, rồi nhắm mắt xoay thử.</li>
 <li>Sau khi cross xong là F2L bắt đầu ngay — không có khoảng dừng để "tìm cặp đầu tiên".</li>
 </ul>
 
-<h4>4. Full PLL trước, rồi full OLL</h4>
+<h4>5. Full PLL trước, rồi full OLL</h4>
 <p>Nếu chưa thuộc hết, học full PLL (21 công thức) trước vì ít case hơn và mỗi case xuất hiện thường xuyên; sau đó mới tới full OLL (57 công thức).</p>
 <ul>
 <li>Mỗi ngày học 1–2 công thức mới, ôn lại công thức cũ bằng PLL time attack (bấm giờ từng alg, mục tiêu dưới 2 giây mỗi alg).</li>
@@ -261,15 +295,15 @@
 <li>Luyện nhận diện PLL từ 2 mặt (two-sided recognition) để khỏi phải xoay cube trước khi nhận case.</li>
 </ul>
 
-<h4>5. Finger trick, TPS và cách cầm cube</h4>
-<p>Một nghiên cứu phân tích 69 lượt giải (Boyce &amp; Storm, 2022) cho thấy: người giải 20 giây để cube đứng yên tới 46% thời gian, còn người giải 10 giây chỉ dừng khoảng 33% — trong khi tốc độ tay lúc đang xoay chỉ chênh nhau khoảng 22% (7,16 so với 9,21 nước/giây). Nghĩa là giảm pause và giảm đổi grip hiệu quả hơn hẳn so với cố xoay nhanh hơn. Người giải 20 giây đổi grip trung bình 23 lần mỗi lượt, người 10 giây chỉ khoảng 11 lần.</p>
+<h4>6. Finger trick, TPS và cách cầm cube</h4>
+<p>Một nghiên cứu phân tích 69 lượt giải (Boyce &amp; Storm, 2022 — số liệu tham khảo, chưa kiểm chứng được bài gốc) cho thấy: người giải 20 giây để cube đứng yên tới 46% thời gian, còn người giải 10 giây chỉ dừng khoảng 33% — trong khi tốc độ tay lúc đang xoay chỉ chênh nhau khoảng 22% (7,16 so với 9,21 nước/giây). Nghĩa là giảm pause và giảm đổi grip hiệu quả hơn hẳn so với cố xoay nhanh hơn. Người giải 20 giây đổi grip trung bình 23 lần mỗi lượt, người 10 giây chỉ khoảng 11 lần.</p>
 <ul>
 <li>U2 bằng double flick (ngón trỏ + ngón giữa), R/R' bằng cổ tay, giữ ngón cái cố định làm trục.</li>
 <li>Luyện finger trick theo 3 giai đoạn: cầm đúng → nối nhiều bước không nhấc ngón cái → trộn công thức rồi mới tăng tốc.</li>
 <li>Không cần TPS siêu cao: người giải 10 giây xoay trung bình khoảng 9 nước/giây. Tốc độ đó là đủ nếu bạn không pause.</li>
 </ul>
 
-<h4>6. Lịch luyện mỗi ngày (45–60 phút)</h4>
+<h4>7. Lịch luyện mỗi ngày (45–60 phút)</h4>
 <ul>
 <li><strong>10 phút:</strong> slow solves — 3–5 lượt giải chậm, không bấm giờ, chỉ tập lookahead.</li>
 <li><strong>10 phút:</strong> học/ôn công thức — 1–2 alg mới + time attack các alg đã học.</li>
@@ -278,7 +312,7 @@
 <li><strong>Quan trọng nhất:</strong> luyện có mục đích (deliberate practice). Giải bừa 100 lượt mà không sửa gì thì gần như không tiến bộ — tìm điểm yếu, sửa nó, rồi mới tăng tốc.</li>
 </ul>
 
-<h4>7. Lỗi thường gặp khiến kẹt ở sub-13</h4>
+<h4>8. Lỗi thường gặp khiến kẹt ở sub-13</h4>
 <ul>
 <li>Xoay nhanh nhưng pause nhiều: tốc độ tay cao mà cứ dừng tìm cặp thì vẫn chậm.</li>
 <li>Chỉ giải timed, không bao giờ drill: timed solves đo trình độ, drill mới nâng trình độ.</li>
@@ -289,7 +323,7 @@
 <li>So sánh single may mắn thay vì nhìn Ao100 — average mới là trình độ thật.</li>
 </ul>
 
-<h4>8. Mốc thời gian thực tế</h4>
+<h4>9. Mốc thời gian thực tế</h4>
 <p>Sub-10 là một rào cản khó — cộng đồng SpeedSolving khuyên đừng đặt deadline cứng vì nó đến khi nó đến. Với nền sub-13 và luyện đều 30–60 phút mỗi ngày, đa số cuber mất khoảng vài tháng đến hơn 1 năm để xuống sub-10, tùy vào việc đã thuộc full OLL/PLL chưa và lookahead hiện tại tới đâu. Đừng sốt ruột nếu có tuần không tiến bộ: plateau vài tuần là bình thường, đó thường là dấu hiệu cần đổi bài tập chứ không phải dấu hiệu hết khả năng. Đo tiến bộ bằng Ao100 theo tuần, không phải bằng single.</p>
 
 <h4>Nguồn tham khảo</h4>
@@ -315,7 +349,11 @@
 
 <!-- ================= MÀN HÌNH NHẬN DIỆN PLL ================= -->
 <div id="recog-view" class="hidden">
-  <div class="recog-title">🧩 Nhận diện PLL</div>
+  <div class="recog-title">🧩 Nhận diện <span id="recog-type-name">PLL</span></div>
+  <div class="recog-type">
+    <button id="btn-recog-pll" class="active">PLL</button>
+    <button id="btn-recog-oll">OLL</button>
+  </div>
   <div class="recog-sub">Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.</div>
   <div id="recog-net" class="cube-net"></div>
   <div id="recog-clock" class="recog-clock">0.00</div>
@@ -325,6 +363,7 @@
     <button id="btn-recog-gotit" class="big" disabled>Nhận ra rồi!</button>
   </div>
   <div id="recog-stats" class="recog-stats"></div>
+  <div id="recog-slow" class="recog-slow"></div>
 </div>
 
 <!-- ================= THANH ĐIỀU HƯỚNG DƯỚI ================= -->
@@ -340,6 +379,7 @@
   <div class="modal-card">
     <h3 id="detail-title">Lượt giải</h3>
     <div id="detail-body"></div>
+    <div id="detail-err"></div>
     <label for="detail-note">Ghi chú</label>
     <textarea id="detail-note" rows="2"></textarea>
     <div class="modal-row">
@@ -360,14 +400,41 @@
     <h3>Cài đặt</h3>
     <label class="check"><input type="checkbox" id="set-inspection" checked> Inspection 15 giây (chuẩn WCA)</label>
     <label class="check"><input type="checkbox" id="set-beep" checked> Âm báo ở giây thứ 8 và 12 khi nhìn trước</label>
-    <label class="check"><input type="checkbox" id="set-split"> Tách bước khi giải (chạm để tách F2L / LL)</label>
+    <label class="check"><input type="checkbox" id="set-split"> Tách bước khi giải (chạm để tách Cross / F2L / LL)</label>
     <label class="check"><input type="checkbox" id="set-metro"> Metronome nhịp tay khi giải</label>
     <label class="check">Nhịp metronome: <input type="number" id="set-bpm" min="60" max="240" step="5" value="120"> BPM</label>
     <label class="check"><input type="checkbox" id="set-hidetime"> Ẩn thời gian khi giải (hiện chữ HIỂN)</label>
     <label class="check"><input type="checkbox" id="set-sounds" checked> Âm thanh phá kỉ lục / chậm nhất (nhạc + tiếng cười)</label>
+    <label class="check">Mục tiêu ngày:
+      <select id="set-goaltype">
+        <option value="streak5">5 lần liên tiếp dưới mốc</option>
+        <option value="ao5">Ao5 dưới mốc</option>
+      </select>
+    </label>
+    <div class="modal-row">
+      <button id="btn-backup-export">💾 Sao lưu (xuất JSON)</button>
+      <button id="btn-backup-import">📥 Khôi phục (nhập JSON)</button>
+    </div>
     <p class="note">Chạm hoặc nhấn giữ 1 lần: bắt đầu inspection 15s (hoặc giải luôn nếu tắt inspection). Chạm tiếp: bắt đầu giải. Chạm: dừng. Chạm 2 lần liên tiếp thật nhanh: hoàn tác lượt vừa giải và về scramble đó.</p>
     <div class="modal-row">
       <button id="settings-close" class="primary">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL SAO LƯU / KHÔI PHỤC ================= -->
+<div id="backup-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="backup-modal-title">💾 Sao lưu</h3>
+    <p class="note" id="backup-note"></p>
+    <textarea id="backup-text" rows="8"></textarea>
+    <div class="modal-row">
+      <button id="btn-backup-copy" class="primary">📋 Sao chép</button>
+      <button id="btn-backup-restore" class="primary hidden">📥 Khôi phục từ văn bản</button>
+      <button id="backup-close">Đóng</button>
+    </div>
+    <div class="modal-row hidden" id="backup-file-row">
+      <label class="file-label">📁 Chọn file JSON… <input type="file" id="backup-file" accept=".json,application/json" class="hidden"></label>
     </div>
   </div>
 </div>
@@ -525,6 +592,16 @@ function isLLOrientationOnly(s) {
   return false;
 }
 
+// --- Lược hoán vị của 1 trạng thái, chỉ giữ mẫu định hướng (co/eo):
+// --- dùng để vẽ hình drill nhận diện OLL, vì alg OLL chuẩn hoán vị cả
+// --- tầng cuối — vẽ trực tiếp thì hàng trên các mặt bên sai màu.
+function pureOriState(s) {
+  const p = solvedState();
+  p.co = s.co.slice();
+  p.eo = s.eo.slice();
+  return p;
+}
+
 // --- Chuyển state sang 54 mặt (facelets) để vẽ hình khối ---
 // Thứ tự mặt: U 0-8, R 9-17, F 18-26, D 27-35, L 36-44, B 45-53.
 // Màu: U=W (trắng), R=R (đỏ), F=G (xanh lá), D=Y (vàng), L=O (cam), B=B (xanh dương).
@@ -608,25 +685,127 @@ const E_CANDIDATES = {
   E2: "R2 U R' U' R' U R' U' R' U R' U R2 U' R' U R'"
 };
 
-// Trigger OLL: dùng làm scramble tập định hướng tầng cuối (áp nghịch đảo vào solved).
-// Tiêu chí: giữ nguyên F2L + làm sai hướng tầng cuối. Đã kiểm chứng: cả 8 trigger
-// đều giữ F2L và làm sai hướng tầng cuối, NHƯNG cả 8 ngoài định hướng còn hoán vị
-// tầng cuối (isLLOrientationOnly = false) — vẫn dùng được cho scramble tập OLL,
-// vì khi tập OLL thì hoán vị tầng cuối không quan trọng (PLL sửa sau).
-const OLL_TRIGGERS = {
-  Sune: "R U R' U R U2 R'",
-  Antisune: "R U2 R' U' R U' R'",
-  H: "R U R' U R U' R' U R U2 R'",
-  Pi: "R U2 R2 U' R2 U' R2 U2 R",
-  T: "R U R' U' R' F R F'",
-  OLL45: "F U R U' R' F'",
-  OLL44: "F R U R' U' F'",
-  OLL2: "R U2 R' U' R U R' U' R U' R'"
+// 57 case OLL — đã kiểm chứng đủ cả 57 bằng test.js (xem oll-report.md).
+// Nguồn: levelcero.com/en/oll (chính), đối chiếu J Perm (mô tả video
+// "All 57 OLL Algorithms") và cubedojang.com/pdf/en/oll.pdf; 16 case có
+// alg thay thế từ nguồn khác cũng cho cùng mẫu định hướng (test.js khóa lại).
+//
+// CÁCH LƯU: mọi alg đã triển khai về nước mặt + M để simulator hiểu
+// (r = R M', r' = R' M, r2 = R2 M2; l = L M, l' = L' M', l2 = L2 M2;
+// R và M giao hoán vì tác động lên tập cubie rời nhau). Dạng gốc (có r/l)
+// ghi trong comment từng dòng để người đọc/học theo được. Chỗ "R R'"
+// (vd OLL 12, 56) là triệt tiêu nhau, giữ nguyên dạng triển khai máy.
+// Một số alg nguồn dùng f/S (f = F S) — simulator không có lát S nên
+// KHÔNG dùng được, đã thay bằng bản tương đương từ nguồn khác:
+//   OLL 2, 3, 4 (levelcero dùng f) -> bản J Perm; OLL 11, 34, 39, 40
+//   (J Perm dùng S/f) -> bản levelcero. Đây là alg ĐÚNG nhưng không biểu
+//   diễn được, khác với E1/E2 là alg SAI. Chi tiết trong oll-report.md.
+//
+// LƯU Ý QUAN TRỌNG (phát hiện bằng simulator, như tiền lệ E-perm):
+// alg OLL chuẩn LUÔN hoán vị tầng cuối (vd Sune nghịch đảo: cp=2,3,0,1).
+// isLLOrientationOnly(invertAlg(alg)) = false với mọi alg chuẩn — đó là
+// bản chất OLL (PLL sửa hoán vị sau), không phải lỗi alg. Kiểm chứng đúng:
+//   - caseState = applyAlg(solved, invertAlg(alg)): F2L nguyên vẹn,
+//     mẫu định hướng đúng nhóm hình (dot 0 cạnh / cross 4 cạnh / còn lại 2).
+//   - alg áp vào trạng thái định hướng thuần pureOriState(caseState) thì
+//     tầng cuối định hướng đúng hết.
+//   - 57 mẫu định hướng khác nhau từng đôi một (tới AUF) và phủ kín toàn
+//     bộ 57 lớp định hướng (liệt kê 216 trạng thái -> 58 lớp gồm solved).
+// Dùng trong app:
+//   - Scramble tập OLL case X: invertAlg(OLL_ALGS[X]) — hoán vị kèm theo
+//     là bình thường, giống lúc giải thật.
+//   - Vẽ hình case X trong drill nhận diện: stateToFacelets(
+//     pureOriState(applyAlg(solvedState(), invertAlg(OLL_ALGS[X]))))
+//     — lược hoán vị thì hình mới khớp sơ đồ OLL chuẩn.
+const OLL_ALGS = {
+  "OLL 1": "R U2 R2 F R F' U2 R' F R F'",
+  "OLL 2": "L F L' U2 R U2 R' U2 L F' L'", // J Perm (levelcero dùng f)
+  "OLL 3": "R' M R2 U R' U R M' U2 R' M U M'", // gốc: r' R2 U R' U r U2 r' U M' (J Perm)
+  "OLL 4": "L M L2 U' L U' L' M' U2 L M U' M'", // gốc: l L2 U' L U' l' U2 l U' M' (J Perm)
+  "OLL 5": "R' M U2 R U R' U R M'", // gốc: r' U2 R U R' U r
+  "OLL 6": "R M' U2 R' U' R U' R' M", // gốc: r U2 R' U' R U' r'
+  "OLL 7": "R M' U R' U R U2 R' M", // gốc: r U R' U R U2 r'
+  "OLL 8": "L' M' U' L U' L' U2 L M", // gốc: l' U' L U' L' U2 l
+  "OLL 9": "R U R' U' R' F R2 U R' U' F'",
+  "OLL 10": "R U R' U R' F R F' R U2 R'",
+  "OLL 11": "R M' U R' U R' F R F' R U2 R' M", // gốc: r U R' U R' F R F' R U2 r'
+  "OLL 12": "M' R' U' R U' R' U2 R U' R R' M", // gốc: M' R' U' R U' R' U2 R U' R r'
+  "OLL 13": "F U R U' R2 F' R U R U' R'",
+  "OLL 14": "R' F R U R' F' R F U' F'",
+  "OLL 15": "R' M U' R M' R' U' R U R' M U R M'", // gốc: r' U' r R' U' R U r' U r
+  "OLL 16": "R M' U R' M R U R' U' R M' U' R' M", // gốc: r U r' R U R' U' r U' r'
+  "OLL 17": "R U R' U R' F R F' U2 R' F R F'",
+  "OLL 18": "R M' U R' U R U2 R2 M2 U' R U' R' U2 R M'", // gốc: r U R' U R U2 r2 U' R U' R' U2 r
+  "OLL 19": "M U R U R' U' M' R' F R F'",
+  "OLL 20": "R M' U R' U' M2 U R U' R' U' M'", // gốc: r U R' U' M2 U R U' R' U' M'
+  "OLL 21": "R U2 R' U' R U R' U' R U' R'",
+  "OLL 22": "R U2 R2 U' R2 U' R2 U2 R",
+  "OLL 23": "R2 D R' U2 R D' R' U2 R'",
+  "OLL 24": "R M' U R' U' R' M F R F'", // gốc: r U R' U' r' F R F'
+  "OLL 25": "F' R M' U R' U' R' M F R", // gốc: F' r U R' U' r' F R
+  "OLL 26": "R U2 R' U' R U' R'",
+  "OLL 27": "R U R' U R U2 R'",
+  "OLL 28": "R M' U R' U' M U R U' R'", // gốc: r U R' U' M U R U' R'
+  "OLL 29": "R U R' U' R U' R' F' U' F R U R'",
+  "OLL 30": "F R' F R2 U' R' U' R U R' F2",
+  "OLL 31": "R' U' F U R U' R' F' R",
+  "OLL 32": "L U F' U' L' U L F L'",
+  "OLL 33": "R U R' U' R' F R F'",
+  "OLL 34": "R U R2 U' R' F R U R U' F'",
+  "OLL 35": "R U2 R2 F R F' R U2 R'",
+  "OLL 36": "L' U' L U' L' U L U L F' L' F",
+  "OLL 37": "F R' F' R U R U' R'",
+  "OLL 38": "R U R' U R U' R' U' R' F R F'",
+  "OLL 39": "L F' L' U' L U F U' L'",
+  "OLL 40": "R' F R U R' U' F' U R",
+  "OLL 41": "R U R' U R U2 R' F R U R' U' F'",
+  "OLL 42": "R' U' R U' R' U2 R F R U R' U' F'",
+  "OLL 43": "F' U' L' U L F",
+  "OLL 44": "F U R U' R' F'",
+  "OLL 45": "F R U R' U' F'",
+  "OLL 46": "R' U' R' F R F' U R",
+  "OLL 47": "R' U' R' F R F' R' F R F' U R",
+  "OLL 48": "F R U R' U' R U R' U' F'",
+  "OLL 49": "R M' U' R2 M2 U R2 M2 U R2 M2 U' R M'", // gốc: r U' r2 U r2 U r2 U' r
+  "OLL 50": "R' M U R2 M2 U' R2 M2 U' R2 M2 U R' M", // gốc: r' U r2 U' r2 U' r2 U r'
+  "OLL 51": "F U R U' R' U R U' R' F'",
+  "OLL 52": "R U R' U R U' B U' B' R'",
+  "OLL 53": "L' M' U2 L U L' U' L U L' U L M", // gốc: l' U2 L U L' U' L U L' U l
+  "OLL 54": "R M' U2 R' U' R U R' U' R U' R' M", // gốc: r U2 R' U' R U R' U' R U' r'
+  "OLL 55": "R U2 R2 U' R U' R' U2 F R F'",
+  "OLL 56": "R' M U' R M' U' R' U R U' R' U R R' M U R M'", // gốc: r' U' r U' R' U R U' R' U R r' U r
+  "OLL 57": "R U R' U' M' U R U' R' M", // gốc: R U R' U' M' U R U' r'
+};
+
+// Dạng hiển thị để học (có r/l): chỉ những case khác dạng triển khai.
+// Các case còn lại hiển thị đúng alg trong OLL_ALGS.
+const OLL_DISPLAY = {
+  "OLL 3": "r' R2 U R' U r U2 r' U M'",
+  "OLL 4": "l L2 U' L U' l' U2 l U' M'",
+  "OLL 5": "r' U2 R U R' U r",
+  "OLL 6": "r U2 R' U' R U' r'",
+  "OLL 7": "r U R' U R U2 r'",
+  "OLL 8": "l' U' L U' L' U2 l",
+  "OLL 11": "r U R' U R' F R F' R U2 r'",
+  "OLL 12": "M' R' U' R U' R' U2 R U' R r'",
+  "OLL 15": "r' U' r R' U' R U r' U r",
+  "OLL 16": "r U r' R U R' U' r U' r'",
+  "OLL 18": "r U R' U R U2 r2 U' R U' R' U2 r",
+  "OLL 20": "r U R' U' M2 U R U' R' U' M'",
+  "OLL 24": "r U R' U' r' F R F'",
+  "OLL 25": "F' r U R' U' r' F R",
+  "OLL 28": "r U R' U' M U R U' R'",
+  "OLL 49": "r U' r2 U r2 U r2 U' r",
+  "OLL 50": "r' U r2 U' r2 U' r2 U r'",
+  "OLL 53": "l' U2 L U L' U' L U L' U l",
+  "OLL 54": "r U2 R' U' R U R' U' R U' r'",
+  "OLL 56": "r' U' r U' R' U R U' R' U R r' U r",
+  "OLL 57": "R U R' U' M' U R U' r'"
 };
 
 // Chuẩn hoá bảng alg (object map) về dạng mảng cho app dùng.
 const PLL_LIST = Object.keys(PLL_ALGS).map(function (n) { return { name: n, alg: PLL_ALGS[n] }; });
-const OLL_LIST = Object.keys(OLL_TRIGGERS).map(function (n) { return OLL_TRIGGERS[n]; });
+const OLL_LIST = Object.keys(OLL_ALGS).map(function (n) { return { name: n, alg: OLL_ALGS[n], disp: (OLL_DISPLAY[n] || OLL_ALGS[n]) }; });
 
 /* =====================================================================
    PHẦN 1: HÀM THUẦN (không chạm DOM) - scramble, trung bình, định dạng.
@@ -654,12 +833,16 @@ function generateScramble(len) {
 }
 
 // --- Chế độ tập: Full (giải cả khối), F2L (chỉ cross+F2L),
-// --- OLL / PLL (scramble chỉ xáo tầng cuối, tập riêng 1 bước).
+// --- OLL / PLL (scramble chỉ xáo tầng cuối, tập riêng 1 bước),
+// --- Slow (giải chậm theo metronome 60 BPM để tập lookahead; lượt Slow
+// --- lưu riêng theo mode nên không tính vào mục tiêu ngày, chuỗi ngày
+// --- hay thống kê Full).
 const MODES = [
   { id: 'full', name: 'Full' },
   { id: 'f2l', name: 'F2L' },
   { id: 'oll', name: 'OLL' },
   { id: 'pll', name: 'PLL' },
+  { id: 'slow', name: 'Slow' },
 ];
 function modeName(mode) {
   for (let i = 0; i < MODES.length; i++) if (MODES[i].id === mode) return MODES[i].name;
@@ -667,30 +850,56 @@ function modeName(mode) {
 }
 // Case của scramble hiện tại (chế độ PLL): tên case, để lưu vào lượt giải.
 let currentStageCase = null;
-// Scramble OLL: 1-2 trigger ngẫu nhiên, mỗi trigger giữ nguyên 2 tầng đầu
-// (chỉ xáo hướng tầng cuối). Không đều case như dùng đủ 57 alg, nhưng đủ tập.
+// Scramble OLL: nghịch đảo của 1 alg OLL ngẫu nhiên (đủ 57 case) — áp
+// vào khối đã giải sẽ ra đúng case đó, rồi giải bằng alg gốc. Alg OLL
+// chuẩn có hoán vị kèm theo (PLL sửa sau), giống lúc giải thật.
 function generateOLLScramble() {
-  if (typeof OLL_LIST === 'undefined' || !OLL_LIST.length) return generateScramble();
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const n = Math.random() < 0.5 ? 1 : 2;
-    const parts = [];
-    for (let i = 0; i < n; i++) parts.push(OLL_LIST[Math.floor(Math.random() * OLL_LIST.length)]);
-    const scr = parts.join(' ');
-    // 2 trigger có thể triệt tiêu nhau (vd Sune + Antisune = solved) — kiểm tra
-    // bằng mô phỏng, nếu ra solved thì xáo lại.
-    if (typeof applyAlg === 'undefined' || !isSolved(applyAlg(solvedState(), scr))) {
-      currentStageCase = null;
-      return scr;
-    }
+  if (typeof OLL_LIST === 'undefined' || !OLL_LIST.length || typeof invertAlg === 'undefined') return generateScramble();
+  const entry = OLL_LIST[Math.floor(Math.random() * OLL_LIST.length)];
+  currentStageCase = entry.name;
+  return invertAlg(entry.alg);
+}
+// --- Thống kê theo case: trung bình thời gian từng case, xếp chậm nhất trước.
+// --- pairs: mảng { c: tên case, t: thời gian ms }.
+// --- Bốc ngẫu nhiên có trọng số: 5 case chậm nhất được bốc nhiều gấp 3 lần
+// --- (để drill đúng điểm yếu thay vì bốc đều).
+function caseAvgList(pairs) {
+  const byCase = {};
+  for (let i = 0; i < pairs.length; i++) {
+    const p = pairs[i];
+    if (!p.c || p.t === null || p.t === undefined) continue;
+    if (!byCase[p.c]) byCase[p.c] = [];
+    byCase[p.c].push(p.t);
   }
-  currentStageCase = null;
-  return OLL_LIST[Math.floor(Math.random() * OLL_LIST.length)];
+  const out = Object.keys(byCase).map(function (c) {
+    return { c: c, avg: meanOf(byCase[c]), n: byCase[c].length };
+  });
+  out.sort(function (a, b) { return b.avg - a.avg; });
+  return out;
+}
+function slowCaseWeights(pairs) {
+  const ranked = caseAvgList(pairs);
+  const w = {};
+  if (ranked.length < 3) return w;
+  for (let i = 0; i < Math.min(5, ranked.length); i++) w[ranked[i].c] = 3;
+  return w;
+}
+function weightedPick(list, weights) {
+  let total = 0;
+  for (let i = 0; i < list.length; i++) total += weights[list[i].name] || 1;
+  let r = Math.random() * total;
+  for (let i = 0; i < list.length; i++) {
+    r -= weights[list[i].name] || 1;
+    if (r <= 0) return list[i];
+  }
+  return list[list.length - 1];
 }
 // Scramble PLL: nghịch đảo của 1 alg PLL ngẫu nhiên — áp vào khối đã giải
 // sẽ ra đúng case đó, rồi giải bằng alg gốc.
 function generatePLLScramble() {
   if (typeof PLL_LIST === 'undefined' || !PLL_LIST.length || typeof invertAlg === 'undefined') return generateScramble();
-  const entry = PLL_LIST[Math.floor(Math.random() * PLL_LIST.length)];
+  const pairs = modeSolves('pll').map(function (s) { return { c: s.case, t: s.time }; });
+  const entry = weightedPick(PLL_LIST, slowCaseWeights(pairs));
   currentStageCase = entry.name;
   return invertAlg(entry.alg);
 }
@@ -821,6 +1030,9 @@ const LS_DAILY = 'cubetimer.daily_goal.v1';
 const LS_LADDER = 'cubetimer.ladder.v1';
 const LS_STREAK = 'cubetimer.streak.v1';
 const LS_RECOG = 'cubetimer.recog.v1';
+// Nhãn nguyên nhân cho lượt tệ (gắn trong modal chi tiết, tổng kết cuối
+// buổi cho biết lỗi nào hay gặp nhất = điểm yếu của buổi sau).
+const ERR_LABELS = { pause: 'pause tìm cặp', alg: 'sai alg', cross: 'cross dở', ll: 'khựng LL', other: 'khác' };
 // Mục tiêu ngày theo bậc thang: 5 lần liên tiếp dưới mốc, xong thì tự
 // nâng lên mốc tiếp theo (13 -> 12,5 -> 12 -> 11,5 -> 11 -> 10,5 -> 10).
 const LADDER = [13, 12.5, 12, 11.5, 11, 10.5, 10];
@@ -849,8 +1061,9 @@ function loadSolves() {
       return { id: s.id, raw: (s.raw === undefined ? s.time : s.raw), time: s.time,
                plus2: !!s.plus2, scramble: s.scramble, date: s.date, note: s.note || '',
                mode: (typeof s.mode === 'string' ? s.mode : 'full'),
-               splits: (s.splits && typeof s.splits.f2l === 'number' ? s.splits : null),
-               case: (typeof s.case === 'string' ? s.case : null) };
+               splits: (s.splits && (typeof s.splits.f2l === 'number' || typeof s.splits.cross === 'number') ? s.splits : null),
+               case: (typeof s.case === 'string' ? s.case : null),
+               err: (typeof s.err === 'string' && ERR_LABELS[s.err] ? s.err : null) };
     });
   } catch (e) { return []; }
 }
@@ -864,8 +1077,9 @@ function loadSettings() {
              splitMode: !!s.splitMode, metronome: !!s.metronome,
              metronomeBpm: (typeof s.metronomeBpm === 'number' ? s.metronomeBpm : 120),
              mode: (typeof s.mode === 'string' ? s.mode : 'full'),
+             goalType: (s.goalType === 'ao5' ? 'ao5' : 'streak5'),
              hideTime: !!s.hideTime, recordSounds: s.recordSounds !== false };
-  } catch (e) { return { inspection: true, beep: true, splitMode: false, metronome: false, metronomeBpm: 120, mode: 'full', hideTime: false, recordSounds: true }; }
+  } catch (e) { return { inspection: true, beep: true, splitMode: false, metronome: false, metronomeBpm: 120, mode: 'full', goalType: 'streak5', hideTime: false, recordSounds: true }; }
 }
 function saveSettings() {
   try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {}
@@ -874,12 +1088,18 @@ function todayStr() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+// Mốc 00:00 hôm nay (ms) — dùng để lọc lượt giải trong ngày.
+function todayStartMs() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 function loadDaily() {
   try {
     const d = JSON.parse(localStorage.getItem(LS_DAILY) || '{}');
-    if (d.date === todayStr()) return { date: d.date, done: !!d.done, reminded: !!d.reminded, consistencyDone: !!d.consistencyDone, target: (typeof d.target === 'number' ? d.target : null) };
+    if (d.date === todayStr()) return { date: d.date, done: !!d.done, reminded: !!d.reminded, consistencyDone: !!d.consistencyDone, restReminded: !!d.restReminded, target: (typeof d.target === 'number' ? d.target : null) };
   } catch (e) {}
-  return { date: todayStr(), done: false, reminded: false, consistencyDone: false };
+  return { date: todayStr(), done: false, reminded: false, consistencyDone: false, restReminded: false };
 }
 function saveDaily() {
   try { localStorage.setItem(LS_DAILY, JSON.stringify(daily)); } catch (e) {}
@@ -931,16 +1151,19 @@ function isFlaggedWith(s, means) {
 }
 // Trung bình tách bước (F2L / ngập ngừng / LL) trên các lượt có splits.
 function splitsAvg(arr) {
-  const f = [], p = [], l = [];
+  const c = [], f = [], p = [], l = [];
   for (let i = 0; i < arr.length; i++) {
     const sp = arr[i].splits;
     if (!sp) continue;
-    f.push(sp.f2l);
-    if (sp.pause !== null && sp.pause !== undefined) p.push(sp.pause);
-    l.push(sp.ll);
+    if (typeof sp.cross === 'number') c.push(sp.cross);
+    if (typeof sp.f2l === 'number') f.push(sp.f2l);
+    if (typeof sp.pause === 'number') p.push(sp.pause);
+    if (typeof sp.ll === 'number') l.push(sp.ll);
   }
-  if (!f.length) return null;
-  return { f2l: meanOf(f), pause: p.length ? meanOf(p) : 0, ll: meanOf(l), n: f.length };
+  if (!f.length && !c.length) return null;
+  return { cross: c.length ? meanOf(c) : null, f2l: f.length ? meanOf(f) : null,
+           pause: p.length ? meanOf(p) : 0, ll: l.length ? meanOf(l) : null,
+           n: Math.max(f.length, c.length) };
 }
 
 const $ = function (sel) { return document.querySelector(sel); };
@@ -966,6 +1189,116 @@ function loadStreak() {
 function saveStreak() {
   try { localStorage.setItem(LS_STREAK, JSON.stringify(streak)); } catch (e) {}
 }
+// --- Lịch luyện hôm nay: checklist 4 mục theo guide, tick tay ---
+// --- (key mới, không đổi key cũ nên không mất lịch sử).
+const LS_SCHEDULE = 'cubetimer.schedule.v1';
+const SCHEDULE_ITEMS = [
+  '🐢 10 phút slow solve — lookahead',
+  '📖 10 phút học/ôn alg',
+  '⏱️ 20–25 phút timed solves',
+  '🎯 5–10 phút drill điểm yếu',
+];
+function loadSchedule() {
+  try {
+    const sc = JSON.parse(localStorage.getItem(LS_SCHEDULE) || '{}');
+    if (sc.date === todayStr() && Array.isArray(sc.items) && sc.items.length === SCHEDULE_ITEMS.length) {
+      return { date: sc.date, items: sc.items.map(function (x) { return !!x; }) };
+    }
+  } catch (e) {}
+  return { date: todayStr(), items: [false, false, false, false] };
+}
+function saveSchedule() {
+  try { localStorage.setItem(LS_SCHEDULE, JSON.stringify(schedule)); } catch (e) {}
+}
+function refreshSchedule() {
+  if (schedule.date !== todayStr()) {
+    schedule = { date: todayStr(), items: [false, false, false, false] };
+    saveSchedule();
+  }
+}
+
+// --- Sao lưu / khôi phục JSON: lịch sử nằm trong localStorage, gỡ app
+// --- hay xóa dữ liệu là mất sạch nên phải có đường xuất ra ngoài.
+// --- Xuất: có cầu native AndroidBackup thì lưu thẳng file vào Download,
+// --- không thì hiện JSON để sao chép tay. Nhập: dán JSON hoặc chọn file.
+const BACKUP_KEYS = [LS_SOLVES, LS_SETTINGS, LS_DAILY, LS_LADDER, LS_STREAK, LS_RECOG, LS_SCHEDULE];
+function buildBackupJSON() {
+  const data = {};
+  for (let i = 0; i < BACKUP_KEYS.length; i++) {
+    try {
+      const v = localStorage.getItem(BACKUP_KEYS[i]);
+      if (v !== null) data[BACKUP_KEYS[i]] = JSON.parse(v);
+    } catch (e) {}
+  }
+  return JSON.stringify({ app: 'cubetimer', version: 1, exportedAt: new Date().toISOString(), data: data });
+}
+function exportBackup() {
+  const json = buildBackupJSON();
+  const fileName = 'cubetimer-backup-' + todayStr() + '.json';
+  if (typeof window.AndroidBackup !== 'undefined' && window.AndroidBackup.saveFile) {
+    try {
+      if (window.AndroidBackup.saveFile(fileName, json) === 'ok') {
+        alert('Đã lưu ' + fileName + ' vào thư mục Download.');
+        return;
+      }
+    } catch (e) {}
+  }
+  $('#backup-modal-title').textContent = '💾 Sao lưu';
+  $('#backup-note').textContent = 'Sao chép toàn bộ văn bản dưới đây và lưu lại (dán vào Ghi chú hoặc file .json). Khi cần khôi phục, dán lại vào ô Khôi phục.';
+  const ta = $('#backup-text');
+  ta.value = json;
+  ta.readOnly = true;
+  $('#btn-backup-copy').classList.remove('hidden');
+  $('#btn-backup-restore').classList.add('hidden');
+  $('#backup-file-row').classList.add('hidden');
+  closeSettings();
+  $('#backup-modal').classList.remove('hidden');
+}
+function openImportModal() {
+  $('#backup-modal-title').textContent = '📥 Khôi phục';
+  $('#backup-note').textContent = 'Dán JSON đã sao lưu vào ô dưới rồi bấm Khôi phục, hoặc chọn file .json. Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại.';
+  const ta = $('#backup-text');
+  ta.value = '';
+  ta.readOnly = false;
+  $('#btn-backup-copy').classList.add('hidden');
+  $('#btn-backup-restore').classList.remove('hidden');
+  $('#backup-file-row').classList.remove('hidden');
+  closeSettings();
+  $('#backup-modal').classList.remove('hidden');
+}
+function closeBackupModal() {
+  $('#backup-modal').classList.add('hidden');
+}
+function copyBackupText() {
+  const ta = $('#backup-text');
+  ta.focus();
+  ta.select();
+  try {
+    if (document.execCommand('copy')) { alert('Đã sao chép bản sao lưu.'); return; }
+  } catch (e) {}
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(function () { alert('Đã sao chép bản sao lưu.'); }, function () { alert('Không sao chép được — hãy bôi đen rồi sao chép tay.'); });
+  } else {
+    alert('Không sao chép được — hãy bôi đen rồi sao chép tay.');
+  }
+}
+function restoreBackup(jsonStr) {
+  let obj;
+  try { obj = JSON.parse(jsonStr); } catch (e) { alert('Không phải JSON hợp lệ.'); return; }
+  const data = (obj && obj.data) ? obj.data : obj;
+  if (!data || typeof data !== 'object' || !Array.isArray(data[LS_SOLVES])) {
+    alert('File sao lưu không đúng định dạng (thiếu lịch sử lượt giải).');
+    return;
+  }
+  const n = data[LS_SOLVES].filter(validSolve).length;
+  if (!confirm('Khôi phục ' + n + ' lượt giải từ bản sao lưu? Dữ liệu hiện tại (' + solves.length + ' lượt) sẽ bị GHI ĐÈ.')) return;
+  for (let i = 0; i < BACKUP_KEYS.length; i++) {
+    try {
+      if (data[BACKUP_KEYS[i]] !== undefined) localStorage.setItem(BACKUP_KEYS[i], JSON.stringify(data[BACKUP_KEYS[i]]));
+    } catch (e) {}
+  }
+  location.reload();
+}
 function loadRecog() {
   try {
     const arr = JSON.parse(localStorage.getItem(LS_RECOG) || '[]');
@@ -983,10 +1316,11 @@ let daily = loadDaily();
 let ladder = loadLadder();
 let streak = loadStreak();
 let recogTimes = loadRecog();
+let schedule = loadSchedule();
 let currentView = 'timer'; // 'timer' | 'history'
 let detailSolveId = null;
-// Chế độ chọn để xóa trong Lịch sử: bấm nút "Chọn để xóa" rồi nhấn giữ
-// 0.3s vào thẻ để chọn/bỏ chọn (chọn được nhiều lượt).
+// Chế độ chọn để xóa trong Lịch sử: bấm nút "Chọn để xóa" rồi chạm vào
+// thẻ để chọn/bỏ chọn (chọn được nhiều lượt).
 let selectMode = false;
 let selectedIds = new Set();
 
@@ -1001,8 +1335,10 @@ let beeped8 = false, beeped12 = false;
 let currentScramble = generateScrambleFor(settings.mode || 'full');
 let rafId = null;
 let audioCtx = null;
-// Tách bước: splitStep 0 = chưa tách, 1 = đã tách F2L, 2 = đã tách LL.
+// Tách bước: splitStep 0 = chưa tách, 1 = đã tách cross, 2 = đã tách F2L,
+// 3 = đã tách LL (đã ghi mốc ngập ngừng).
 let splitStep = 0;
+let splitCrossMs = 0;
 let splitF2lMs = 0;
 let splitPauseMs = 0;
 // Nhấn giữ để dừng khi đang bật Tách bước (lối thoát khẩn).
@@ -1052,7 +1388,7 @@ function handleTap() {
   ensureAudio();
   if (phase === 'running') {
     // Tách bước đang bật (chỉ ở chế độ Full): chạm = tách bước tiếp theo,
-    // chạm lần 3 mới dừng. Nhấn giữ 0,6s hoặc bấm phím khác để dừng ngay.
+    // chạm lần 4 mới dừng. Nhấn giữ 0,6s hoặc bấm phím khác để dừng ngay.
     if (settings.splitMode && (settings.mode || 'full') === 'full') advanceSplit();
     else stopSolve();
     return;
@@ -1098,6 +1434,7 @@ function startSolve() {
   }
   solveStart = performance.now();
   splitStep = 0;
+  splitCrossMs = 0;
   splitF2lMs = 0;
   splitPauseMs = 0;
   phase = 'running';
@@ -1113,27 +1450,32 @@ function stopSolve() {
   const newTime = raw + (pendingPlus2 ? PLUS2_MS : 0);
   const mode = settings.mode || 'full';
   lastStopAt = performance.now();
-  // Lượt dưới 5s ở Full/F2L là bấm nhầm (trình cậu không giải dưới 5s
-  // được): bỏ luôn, không lưu, không hỏi, không thông báo. Không áp dụng
-  // cho OLL/PLL vì drill tầng cuối dưới 5s là bình thường.
-  const skipSave = (mode === 'full' || mode === 'f2l') && newTime < 5000;
-  // Tách bước: chỉ lưu khi đã tách F2L và mốc tách cách lúc dừng > 0,5s
-  // (tránh trường hợp quên tách rồi chạm vội lúc cuối).
+  // Lượt dưới 5s ở Full/F2L/Slow là bấm nhầm (trình cậu không giải dưới 5s
+  // được, còn Slow thì còn chậm hơn nữa): bỏ luôn, không lưu, không hỏi,
+  // không thông báo. Không áp dụng cho OLL/PLL vì drill tầng cuối dưới 5s
+  // là bình thường.
+  const skipSave = (mode === 'full' || mode === 'f2l' || mode === 'slow') && newTime < 5000;
+  // Tách bước: lưu từ khi đã tách cross; F2L/LL chỉ lưu khi đã tách F2L
+  // và mốc tách cách lúc dừng > 0,5s (tránh trường hợp quên tách rồi chạm
+  // vội lúc cuối). Lượt cũ chưa có cross thì cross = null.
   let splits = null;
-  if (!skipSave && settings.splitMode && mode === 'full' && splitStep >= 1 && raw - splitF2lMs > 500) {
-    const pause = splitStep >= 2 ? Math.floor(splitPauseMs / 10) * 10 : null;
-    splits = {
-      f2l: Math.floor(splitF2lMs / 10) * 10,
-      pause: pause,
-      ll: Math.floor((raw - splitF2lMs - (pause || 0)) / 10) * 10,
-    };
+  if (!skipSave && settings.splitMode && mode === 'full' && splitStep >= 1) {
+    splits = { cross: Math.floor(splitCrossMs / 10) * 10, f2l: null, pause: null, ll: null };
+    if (splitStep >= 2 && raw - splitF2lMs > 500) {
+      const pause = splitStep >= 3 ? Math.floor(splitPauseMs / 10) * 10 : null;
+      splits.f2l = Math.floor(splitF2lMs / 10) * 10;
+      splits.pause = pause;
+      splits.ll = Math.floor((raw - splitF2lMs - (pause || 0)) / 10) * 10;
+    }
   }
-  const record = skipSave ? null : checkRecord(modeSolves(mode), newTime);
+  // Slow không có kỉ lục: lượt Slow "nhanh nhất" không có nghĩa gì
+  // (mục đích là chậm mà không dừng), nên không hiện khung chúc mừng.
+  const record = (skipSave || mode === 'slow') ? null : checkRecord(modeSolves(mode), newTime);
   if (!skipSave) {
     solves.push({
       id: makeId(), raw: raw, time: newTime,
       plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
-      mode: mode, splits: splits, case: currentStageCase,
+      mode: mode, splits: splits, case: currentStageCase, err: null,
     });
     saveSolves();
   }
@@ -1148,6 +1490,7 @@ function stopSolve() {
   if (!skipSave && mode === 'full') {
     const goalDone = checkDailyGoal();
     if (!goalDone) checkConsistency();
+    checkRestReminder();
   }
 }
 
@@ -1177,6 +1520,18 @@ function checkDailyGoal() {
   refreshDaily();
   if (daily.done) return false;
   const target = ladderTarget();
+  if (settings.goalType === 'ao5') {
+    const a5 = averageOf(modeSolves('full').filter(function (s) { return s.date >= todayStartMs(); }), 5);
+    if (a5.status === 'ok' && a5.value < target * 1000) {
+      daily.done = true;
+      daily.target = target;
+      saveDaily();
+      updateStreak();
+      showGoalOverlay('🎉', 'Chúc mừng!', 'Đã hoàn thành mục tiêu hôm nay:<br>Ao5 dưới ' + fmtTarget(target) + 's (' + fmt(a5.value) + ')');
+      return true;
+    }
+    return false;
+  }
   if (streakCountIn(modeSolves('full'), target) >= DAILY_GOAL_STREAK) {
     daily.done = true;
     daily.target = target;
@@ -1217,22 +1572,44 @@ function checkNightReminder() {
   if (now.getHours() === 23 && now.getMinutes() === 59) {
     daily.reminded = true;
     saveDaily();
-    showGoalOverlay('⏰', 'Sắp hết ngày!', 'Hôm nay chưa hoàn thành mục tiêu:<br>5 lần liên tiếp dưới ' + fmtTarget(ladderTarget()) + 's');
+    showGoalOverlay('⏰', 'Sắp hết ngày!', 'Hôm nay chưa hoàn thành mục tiêu:<br>' +
+      (settings.goalType === 'ao5' ? 'Ao5 dưới ' : '5 lần liên tiếp dưới ') + fmtTarget(ladderTarget()) + 's');
+  }
+}
+// --- Nhắc nghỉ: quá 100 lượt hoặc 60 phút giải trong ngày thì nhắc dừng
+// --- 1 lần/ngày (giải bừa nhiều không tiến bộ). Nếu khung chúc mừng đang
+// --- hiện thì đợi lượt sau, khỏi đè lên nhau.
+function checkRestReminder() {
+  refreshDaily();
+  if (daily.restReminded) return;
+  const todayAll = solves.filter(function (s) { return s.date >= todayStartMs(); });
+  let totalMs = 0;
+  for (let i = 0; i < todayAll.length; i++) if (todayAll[i].time !== null) totalMs += todayAll[i].time;
+  if (todayAll.length >= 100 || totalMs >= 3600000) {
+    if (!$('#goal-overlay').classList.contains('hidden')) return;
+    daily.restReminded = true;
+    saveDaily();
+    showGoalOverlay('😴', 'Nghỉ chút đi!', 'Hôm nay đã giải ' + todayAll.length + ' lượt (' + Math.round(totalMs / 60000) + ' phút) — nghỉ tay rồi quay lại sau, giải bừa nhiều không tiến bộ đâu.');
   }
 }
 // Tách bước khi đang giải (chỉ ở chế độ Full, khi Tách bước đang bật):
-// chạm 1 = hết F2L, chạm 2 = bắt đầu LL (khoảng giữa là thời gian ngập
-// ngừng), chạm 3 = dừng. Rung nhẹ mỗi lần tách để biết đã ghi mốc.
+// chạm 1 = hết cross, chạm 2 = hết F2L, chạm 3 = bắt đầu LL (khoảng giữa
+// là thời gian ngập ngừng), chạm 4 = dừng. Rung nhẹ mỗi lần tách để biết đã ghi mốc.
 function advanceSplit() {
   const now = performance.now();
   if (splitStep === 0) {
-    splitF2lMs = now - solveStart;
+    splitCrossMs = now - solveStart;
     splitStep = 1;
-    setStatus('F2L: ' + fmt(splitF2lMs) + ' — chạm khi bắt đầu LL');
+    setStatus('Cross: ' + fmt(splitCrossMs) + ' — chạm khi xong F2L');
     vibrate(50);
   } else if (splitStep === 1) {
-    splitPauseMs = now - (solveStart + splitF2lMs);
+    splitF2lMs = now - solveStart;
     splitStep = 2;
+    setStatus('Cross+F2L: ' + fmt(splitF2lMs) + ' — chạm khi bắt đầu LL');
+    vibrate(50);
+  } else if (splitStep === 2) {
+    splitPauseMs = now - (solveStart + splitF2lMs);
+    splitStep = 3;
     setStatus('Ngập ngừng: ' + fmt(splitPauseMs) + ' — chạm để dừng');
     vibrate(50);
   } else {
@@ -1257,8 +1634,11 @@ function metroTick() {
 }
 function startMetronome() {
   stopMetronome();
-  if (!settings.metronome) return;
-  const bpm = settings.metronomeBpm || 120;
+  // Mode Slow: luôn bật metronome 60 BPM (1 nước/giây) dù cài đặt tắt —
+  // nhịp chậm đều là điểm mấu chốt của bài lookahead.
+  const isSlow = (settings.mode || 'full') === 'slow';
+  if (!settings.metronome && !isSlow) return;
+  const bpm = isSlow ? 60 : (settings.metronomeBpm || 120);
   metroTimer = setInterval(metroTick, 60000 / bpm);
 }
 function stopMetronome() {
@@ -1561,6 +1941,7 @@ function modalOpen() {
   return !$('#detail-modal').classList.contains('hidden') ||
     !$('#settings-modal').classList.contains('hidden') ||
     !$('#summary-modal').classList.contains('hidden') ||
+    !$('#backup-modal').classList.contains('hidden') ||
     !$('#goal-overlay').classList.contains('hidden');
 }
 function inputFocused() {
@@ -1601,11 +1982,28 @@ function showRecog() {
   renderRecog();
 }
 
+// --- Gợi ý bài hôm nay theo F2L/LL/pause trung bình (20 lượt Full gần nhất).
+function todaySuggestion() {
+  const sa = splitsAvg(modeSolves('full').slice(-20));
+  if (!sa) return '💡 Chưa đủ dữ liệu tách bước — bật Tách bước trong Cài đặt để nhận gợi ý bài tập.';
+  if (sa.f2l !== null && sa.f2l > 7000) return '💡 Hôm nay nên tập: 🐢 slow solve — Cross+F2L trung bình ' + fmt(sa.f2l) + ' (mục tiêu ≤ 6,5s).';
+  if (sa.ll !== null && sa.ll > 4000) return '💡 Hôm nay nên tập: 🧩 drill PLL — LL trung bình ' + fmt(sa.ll) + ' (mục tiêu ≤ 3,5s).';
+  if (sa.pause > 1000) return '💡 Hôm nay nên tập: 👀 lookahead — ngập ngừng trung bình ' + fmt(sa.pause) + ', thử slow solve không pause.';
+  return '💡 Các mốc đều đạt — hôm nay timed solves + drill nhận diện.';
+}
 function renderGoalStatus() {
   refreshDaily();
   const el = $('#goal-status');
   const t = ladderTarget();
-  if (daily.done) {
+  if (settings.goalType === 'ao5') {
+    const a5 = averageOf(modeSolves('full').filter(function (s) { return s.date >= todayStartMs(); }), 5);
+    if (daily.done) {
+      const doneTarget = (typeof daily.target === 'number' ? daily.target : t);
+      el.textContent = '✅ Đã hoàn thành (Ao5 dưới ' + fmtTarget(doneTarget) + 's)';
+    } else {
+      el.textContent = '⏳ Ao5 dưới ' + fmtTarget(t) + 's — hiện tại: ' + fmtAverageResult(a5);
+    }
+  } else if (daily.done) {
     const doneTarget = (typeof daily.target === 'number' ? daily.target : t);
     el.textContent = '✅ Đã hoàn thành (5 lần liên tiếp dưới ' + fmtTarget(doneTarget) + 's)';
   } else {
@@ -1613,11 +2011,44 @@ function renderGoalStatus() {
   }
   const sl = $('#streak-line');
   if (sl) sl.textContent = streak.count > 0 ? '🔥 Chuỗi ngày hoàn thành mục tiêu: ' + streak.count + ' ngày' : '';
+  const sug = $('#today-suggestion');
+  if (sug) sug.textContent = todaySuggestion();
+}
+
+function renderSchedule() {
+  refreshSchedule();
+  const box = $('#schedule-box');
+  if (!box) return;
+  const doneCount = schedule.items.filter(Boolean).length;
+  let h = '<div class="schedule-title">📋 Lịch hôm nay (' + doneCount + '/4)</div>';
+  for (let i = 0; i < SCHEDULE_ITEMS.length; i++) {
+    h += '<div class="sch-row' + (schedule.items[i] ? ' done' : '') + '" data-sch="' + i + '">' +
+      '<span class="sch-check">' + (schedule.items[i] ? '✅' : '⬜') + '</span>' +
+      '<span>' + SCHEDULE_ITEMS[i] + '</span></div>';
+  }
+  box.innerHTML = h;
+}
+function toggleSchedule(i) {
+  refreshSchedule();
+  schedule.items[i] = !schedule.items[i];
+  saveSchedule();
+  renderSchedule();
+  // Tick đủ 4 mục thì cộng vào chuỗi ngày (updateStreak đã chặn cộng
+  // 2 lần/ngày nếu mục tiêu ngày xong trước đó).
+  if (schedule.items.every(Boolean)) {
+    const before = streak.count;
+    updateStreak();
+    renderGoalStatus();
+    if (streak.count > before) {
+      showGoalOverlay('✅', 'Xong lịch hôm nay!', 'Đã hoàn thành cả 4 mục luyện tập — chuỗi ngày: ' + streak.count + ' ngày');
+    }
+  }
 }
 
 function renderHistory() {
   exitSelectMode();
   renderGoalStatus();
+  renderSchedule();
   renderModeChips('history');
   const list = $('#history-list');
   const arr = currentModeSolves();
@@ -1652,9 +2083,12 @@ function openDetail(id) {
   const upTo = arr.slice(0, idx + 1);
   let extra = '';
   if (s.splits) {
-    extra += '<div class="detail-line">F2L: <b>' + fmt(s.splits.f2l) + '</b> (mục tiêu ≤ 6,5s)' +
-      (s.splits.pause !== null && s.splits.pause !== undefined ? ' · Ngập ngừng: <b>' + fmt(s.splits.pause) + '</b>' : '') +
-      ' · LL: <b>' + fmt(s.splits.ll) + '</b> (mục tiêu ≤ 3,5s)</div>';
+    const sp = [];
+    if (typeof s.splits.cross === 'number') sp.push('Cross: <b>' + fmt(s.splits.cross) + '</b>');
+    if (typeof s.splits.f2l === 'number') sp.push('Cross+F2L: <b>' + fmt(s.splits.f2l) + '</b> (mục tiêu ≤ 6,5s)');
+    if (typeof s.splits.pause === 'number') sp.push('Ngập ngừng: <b>' + fmt(s.splits.pause) + '</b>');
+    if (typeof s.splits.ll === 'number') sp.push('LL: <b>' + fmt(s.splits.ll) + '</b> (mục tiêu ≤ 3,5s)');
+    if (sp.length) extra += '<div class="detail-line">' + sp.join(' · ') + '</div>';
   }
   if (s.case) extra += '<div class="detail-line">Case: <b>' + escapeHtml(s.case) + '</b></div>';
   if (isFlaggedWith(s, dayMeans())) extra += '<div class="detail-line">🚩 Lượt này chậm hơn 1,3× trung bình trong ngày.</div>';
@@ -1666,6 +2100,7 @@ function openDetail(id) {
     '<div class="detail-line">Ao5 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 5)) +
     '</b> · Ao12 lúc đó: <b>' + fmtAverageResult(averageOf(upTo, 12)) + '</b></div>' + extra;
   $('#detail-note').value = s.note || '';
+  renderErrButtons();
   $('#detail-plus2').disabled = s.time === null;
   $('#detail-dnf').disabled = s.time === null && s.raw === null;
   $('#detail-modal').classList.remove('hidden');
@@ -1673,6 +2108,24 @@ function openDetail(id) {
 function closeDetail() {
   $('#detail-modal').classList.add('hidden');
   detailSolveId = null;
+}
+function renderErrButtons() {
+  const s = solves.find(function (x) { return x.id === detailSolveId; });
+  const box = $('#detail-err');
+  if (!s || !box) return;
+  let h = '<div class="detail-line">Nguyên nhân (lượt tệ):</div><div class="err-row">';
+  Object.keys(ERR_LABELS).forEach(function (k) {
+    h += '<button data-err="' + k + '"' + (s.err === k ? ' class="active"' : '') + '>' + ERR_LABELS[k] + '</button>';
+  });
+  h += '</div>';
+  box.innerHTML = h;
+}
+function setSolveErr(k) {
+  const s = solves.find(function (x) { return x.id === detailSolveId; });
+  if (!s) return;
+  s.err = (s.err === k) ? null : k; // bấm lại thì bỏ chọn
+  saveSolves();
+  renderErrButtons();
 }
 function openSettings() {
   $('#set-inspection').checked = settings.inspection;
@@ -1682,6 +2135,7 @@ function openSettings() {
   $('#set-bpm').value = settings.metronomeBpm || 120;
   $('#set-hidetime').checked = !!settings.hideTime;
   $('#set-sounds').checked = settings.recordSounds !== false;
+  $('#set-goaltype').value = settings.goalType || 'streak5';
   $('#settings-modal').classList.remove('hidden');
 }
 function closeSettings() {
@@ -1728,6 +2182,48 @@ function openSummary() {
 function closeSummary() {
   $('#summary-modal').classList.add('hidden');
 }
+// --- Ao100 theo tuần: Ao100 lăn tại cuối mỗi tuần trong 8 tuần gần nhất
+// --- (dùng lại averageOf; tuần chưa đủ 100 lượt thì bỏ qua). Guide nói đo
+// --- tiến bộ bằng Ao100 theo tuần nên biểu đồ này hiện tiến bộ thật.
+function weeklyAo100() {
+  const full = modeSolves('full').slice().sort(function (a, b) { return a.date - b.date; });
+  if (full.length < 100) return [];
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // thứ 2 = 0
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day, 0, 0, 0, 0);
+  const weeks = [];
+  for (let w = 7; w >= 0; w--) {
+    const end = new Date(monday.getTime());
+    end.setDate(monday.getDate() - 7 * w + 6);
+    end.setHours(23, 59, 59, 999);
+    const prefix = full.filter(function (s) { return s.date <= end.getTime(); });
+    if (prefix.length < 100) continue;
+    const r = averageOf(prefix, 100);
+    if (r.status === 'ok') weeks.push({ label: end.getDate() + '/' + (end.getMonth() + 1), value: r.value });
+  }
+  return weeks;
+}
+function weeklyChartHTML() {
+  const weeks = weeklyAo100();
+  if (weeks.length < 2) return '';
+  const max = Math.max.apply(null, weeks.map(function (w) { return w.value; }));
+  let bars = '';
+  for (let i = 0; i < weeks.length; i++) {
+    const h = Math.max(8, Math.round(weeks[i].value / max * 60));
+    bars += '<div class="wk-bar"><div class="wk-val">' + fmt(weeks[i].value) + '</div>' +
+      '<div class="wk-fill" style="height:' + h + 'px"></div>' +
+      '<div class="wk-lab">' + weeks[i].label + '</div></div>';
+  }
+  return '<div class="summary-line">Ao100 theo tuần (cột càng thấp càng tốt):</div><div class="wk-chart">' + bars + '</div>';
+}
+// --- Lỗi hay gặp nhất trong 1 mảng lượt giải (để tổng kết cuối buổi).
+function mostCommonErr(arr) {
+  const counts = {};
+  for (let i = 0; i < arr.length; i++) if (arr[i].err) counts[arr[i].err] = (counts[arr[i].err] || 0) + 1;
+  let best = null, bestN = 0;
+  Object.keys(counts).forEach(function (k) { if (counts[k] > bestN) { best = k; bestN = counts[k]; } });
+  return best ? { key: best, n: bestN } : null;
+}
 function buildSummaryHTML() {
   const mode = settings.mode || 'full';
   const arr = currentModeSolves();
@@ -1749,15 +2245,60 @@ function buildSummaryHTML() {
   h += '<div class="summary-line">Trung bình: <b>' + fmtAvg(meanOf(times)) + '</b> · Ao5: <b>' + fmtAverageResult(averageOf(today, 5)) + '</b> · Ao12: <b>' + fmtAverageResult(averageOf(today, 12)) + '</b></div>';
   const sd = stddevOf(times);
   h += '<div class="summary-line">Độ lệch chuẩn: <b>' + (sd === null ? '-' : '±' + fmt(sd)) + '</b> · Độ đều: <b>' + consistencyCount(times, CONSISTENCY_BAND_MS) + '/' + CONSISTENCY_TARGET + '</b></div>';
-  if (sa) h += '<div class="summary-line">F2L trung bình: <b>' + fmt(sa.f2l) + '</b> (mục tiêu ≤ 6,5s) · Ngập ngừng: <b>' + fmt(sa.pause) + '</b> · LL: <b>' + fmt(sa.ll) + '</b> (mục tiêu ≤ 3,5s) — ' + sa.n + ' lượt có tách bước</div>';
+  h += '<div class="summary-line">Ao100 (100 lượt gần nhất): <b>' + fmtAverageResult(averageOf(arr, 100)) + '</b></div>';
+  const topErr = mostCommonErr(today);
+  if (topErr) h += '<div class="summary-line">Lỗi hay gặp nhất: <b>' + ERR_LABELS[topErr.key] + ' (' + topErr.n + ' lượt)</b> — điểm yếu cần sửa buổi sau</div>';
+  if (mode === 'pll') {
+    const ranked = caseAvgList(modeSolves('pll').map(function (s) { return { c: s.case, t: s.time }; }));
+    if (ranked.length) {
+      const top = ranked.slice(0, 5).map(function (r) { return r.c + ' ' + fmt(r.avg); }).join(' · ');
+      h += '<div class="summary-line">Top 5 case PLL chậm nhất: <b>' + top + '</b> — các case này sẽ được bốc nhiều hơn</div>';
+    }
+  }
+  if (sa) {
+    const sp = [];
+    if (sa.cross !== null) sp.push('Cross trung bình: <b>' + fmt(sa.cross) + '</b> (mục tiêu ≤ 1,5s)');
+    if (sa.f2l !== null) sp.push('Cross+F2L trung bình: <b>' + fmt(sa.f2l) + '</b> (mục tiêu ≤ 6,5s)');
+    sp.push('Ngập ngừng: <b>' + fmt(sa.pause) + '</b>');
+    if (sa.ll !== null) sp.push('LL: <b>' + fmt(sa.ll) + '</b> (mục tiêu ≤ 3,5s)');
+    h += '<div class="summary-line">' + sp.join(' · ') + ' — ' + sa.n + ' lượt có tách bước</div>';
+  }
   if (mode === 'full') {
     h += '<div class="summary-line">Lượt bị gắn cờ 🚩: <b>' + flagged + '</b></div>';
-    h += '<div class="summary-line">Mục tiêu ngày: <b>' + (daily.done ? 'đã xong' : 'chuỗi dưới ' + fmtTarget(ladderTarget()) + 's: ' + streakCountIn(modeSolves('full'), ladderTarget()) + '/5') + '</b> · Chuỗi ngày: <b>' + streak.count + '</b></div>';
+    let goalTxt;
+    if (daily.done) goalTxt = 'đã xong';
+    else if (settings.goalType === 'ao5') goalTxt = 'Ao5 dưới ' + fmtTarget(ladderTarget()) + 's: ' + fmtAverageResult(averageOf(modeSolves('full').filter(function (s) { return s.date >= todayStartMs(); }), 5));
+    else goalTxt = 'chuỗi dưới ' + fmtTarget(ladderTarget()) + 's: ' + streakCountIn(modeSolves('full'), ladderTarget()) + '/5';
+    h += '<div class="summary-line">Mục tiêu ngày: <b>' + goalTxt + '</b> · Chuỗi ngày: <b>' + streak.count + '</b></div>';
+    h += weeklyChartHTML();
+    const wk = weeklyAo100();
+    if (wk.length >= 3) {
+      const latest = wk[wk.length - 1], older = wk[wk.length - 3];
+      if (latest.value >= older.value) {
+        h += '<div class="summary-line">⚠️ Ao100 tuần này (' + fmt(latest.value) + ') không tốt hơn 2 tuần trước (' + fmt(older.value) + ') — plateau là bình thường, thử đổi bài tập (slow solve / drill điểm yếu) thay vì giải bừa thêm.</div>';
+      }
+    }
   }
   return h;
 }
-// --- Drill nhận diện PLL: hiện hình khối của 1 case ngẫu nhiên, bấm khi
-// --- nhận ra case nào. Thời gian nhận diện được lưu riêng (LS_RECOG).
+// --- Drill nhận diện PLL / OLL: hiện hình khối của 1 case ngẫu nhiên,
+// --- bấm khi nhận ra case nào. Thời gian nhận diện được lưu riêng
+// --- (LS_RECOG), có ghi loại (y: 'pll' | 'oll'; lượt cũ không có y
+// --- thì tính là PLL).
+let recogType = 'pll'; // 'pll' | 'oll'
+function recogList() { return recogType === 'oll' ? OLL_LIST : PLL_LIST; }
+function setRecogType(t) {
+  recogType = t;
+  $('#recog-type-name').textContent = t.toUpperCase();
+  $('#btn-recog-pll').classList.toggle('active', t === 'pll');
+  $('#btn-recog-oll').classList.toggle('active', t === 'oll');
+  recogState = 'idle';
+  if (recogRaf) cancelAnimationFrame(recogRaf);
+  $('#recog-clock').textContent = '0.00';
+  $('#recog-answer').textContent = '';
+  $('#btn-recog-gotit').disabled = true;
+  renderRecogStats();
+}
 // Lưới hình khối: mặt U ở giữa + hàng trên của 4 mặt bên (chỉ số facelet,
 // null = ô trống). Thứ tự các hàng bên đã xoay cho đúng hướng nhìn từ trên.
 const NET_MAP = [
@@ -1784,14 +2325,24 @@ function renderRecogNet(facelets) {
   $('#recog-net').innerHTML = h;
 }
 function recogNewCase() {
-  if (typeof PLL_LIST === 'undefined' || !PLL_LIST.length ||
+  const list = recogList();
+  if (typeof list === 'undefined' || !list.length ||
       typeof applyAlg === 'undefined' || typeof solvedState === 'undefined' ||
       typeof invertAlg === 'undefined' || typeof stateToFacelets === 'undefined') {
-    $('#recog-answer').textContent = 'Chưa có dữ liệu PLL.';
+    $('#recog-answer').textContent = 'Chưa có dữ liệu ' + recogType.toUpperCase() + '.';
     return;
   }
-  recogCase = PLL_LIST[Math.floor(Math.random() * PLL_LIST.length)];
-  const state = applyAlg(solvedState(), invertAlg(recogCase.alg));
+  recogCase = list[Math.floor(Math.random() * list.length)];
+  // Drill nhận diện: 5 case chậm nhất (theo thời gian nhận diện đã lưu)
+  // được bốc nhiều gấp 3 lần để drill đúng điểm yếu.
+  if (recogType === 'pll' || recogType === 'oll') {
+    const pairs = recogTimes.filter(function (r) { return (r.y || 'pll') === recogType; }).map(function (r) { return { c: r.c, t: r.t }; });
+    recogCase = weightedPick(list, slowCaseWeights(pairs));
+  }
+  let state = applyAlg(solvedState(), invertAlg(recogCase.alg));
+  // OLL: alg chuẩn hoán vị cả tầng cuối — lược hoán vị, chỉ giữ mẫu định
+  // hướng thì hình vẽ mới đúng case (không thì hàng trên mặt bên sai màu).
+  if (recogType === 'oll' && typeof pureOriState !== 'undefined') state = pureOriState(state);
   renderRecogNet(stateToFacelets(state));
   $('#recog-answer').textContent = '';
   $('#btn-recog-gotit').disabled = false;
@@ -1811,20 +2362,31 @@ function recogGotIt() {
   if (recogRaf) cancelAnimationFrame(recogRaf);
   const ms = Math.floor((performance.now() - recogStart) / 10) * 10;
   $('#recog-clock').textContent = (ms / 1000).toFixed(2);
-  $('#recog-answer').innerHTML = recogCase.name + '<small>' + escapeHtml(recogCase.alg) + '</small>';
+  $('#recog-answer').innerHTML = recogCase.name + '<small>' + escapeHtml(recogCase.disp || recogCase.alg) + '</small>';
   $('#btn-recog-gotit').disabled = true;
-  recogTimes.push({ c: recogCase.name, t: ms, date: Date.now() });
+  recogTimes.push({ c: recogCase.name, t: ms, date: Date.now(), y: recogType });
   saveRecog();
   renderRecogStats();
 }
 function renderRecogStats() {
   const el = $('#recog-stats');
-  if (!recogTimes.length) { el.textContent = 'Chưa có lượt nhận diện nào.'; return; }
-  const times = recogTimes.map(function (r) { return r.t; });
-  const last5 = times.slice(-5);
-  el.innerHTML = 'Số lượt: <b>' + times.length + '</b> · Nhanh nhất: <b>' +
-    (Math.min.apply(null, times) / 1000).toFixed(2) + 's</b> · Trung bình 5 lượt gần nhất: <b>' +
-    (meanOf(last5) / 1000).toFixed(2) + 's</b>';
+  const arr = recogTimes.filter(function (r) { return (r.y || 'pll') === recogType; });
+  if (!arr.length) {
+    el.textContent = 'Chưa có lượt nhận diện ' + recogType.toUpperCase() + ' nào.';
+  } else {
+    const times = arr.map(function (r) { return r.t; });
+    const last5 = times.slice(-5);
+    el.innerHTML = 'Số lượt: <b>' + times.length + '</b> · Nhanh nhất: <b>' +
+      (Math.min.apply(null, times) / 1000).toFixed(2) + 's</b> · Trung bình 5 lượt gần nhất: <b>' +
+      (meanOf(last5) / 1000).toFixed(2) + 's</b>';
+  }
+  const slowEl = $('#recog-slow');
+  if (slowEl) {
+    const ranked = caseAvgList(arr.map(function (r) { return { c: r.c, t: r.t }; }));
+    slowEl.innerHTML = ranked.length >= 3
+      ? 'Top 5 case ' + recogType.toUpperCase() + ' chậm nhất: <b>' + ranked.slice(0, 5).map(function (r) { return r.c + ' ' + (r.avg / 1000).toFixed(2) + 's'; }).join(' · ') + '</b>'
+      : '';
+  }
 }
 function renderRecog() {
   renderRecogStats();
@@ -1851,7 +2413,7 @@ document.addEventListener('pointerup', function (e) {
   handleTap();
 });
 // Nhấn giữ 0,6s khi đang chạy (Tách bước bật): dừng ngay, khỏi cần chạm
-// đủ 3 lần tách — lối thoát khi quên tách hoặc muốn bỏ lượt.
+// đủ 4 lần — lối thoát khi quên tách hoặc muốn bỏ lượt.
 document.addEventListener('pointerdown', function (e) {
   // Tiếng "cạch" như gõ phím mỗi lần nhấn ngón tay xuống (chỉ ở màn Timer,
   // không tính bấm nút/modal/ô nhập).
@@ -1915,6 +2477,10 @@ document.addEventListener('click', function (e) {
 });
 
 $('#nav-history').addEventListener('click', showHistory);
+$('#schedule-box').addEventListener('click', function (e) {
+  const row = e.target.closest('[data-sch]');
+  if (row) toggleSchedule(parseInt(row.getAttribute('data-sch'), 10));
+});
 $('#nav-timer').addEventListener('click', showTimer);
 $('#nav-recog').addEventListener('click', showRecog);
 $('#nav-settings').addEventListener('click', openSettings);
@@ -1948,15 +2514,36 @@ $('#btn-summary').addEventListener('click', openSummary);
 $('#summary-close').addEventListener('click', closeSummary);
 $('#btn-recog-new').addEventListener('click', recogNewCase);
 $('#btn-recog-gotit').addEventListener('click', recogGotIt);
+$('#btn-recog-pll').addEventListener('click', function () { setRecogType('pll'); });
+$('#btn-recog-oll').addEventListener('click', function () { setRecogType('oll'); });
 // Bấm chip chế độ (ở cả màn Timer và Lịch sử).
 document.addEventListener('click', function (e) {
   const chip = e.target.closest('[data-mode]');
   if (chip) setMode(chip.dataset.mode);
 });
 $('#settings-close').addEventListener('click', closeSettings);
+$('#btn-backup-export').addEventListener('click', exportBackup);
+$('#btn-backup-import').addEventListener('click', openImportModal);
+$('#backup-close').addEventListener('click', closeBackupModal);
+$('#btn-backup-copy').addEventListener('click', copyBackupText);
+$('#btn-backup-restore').addEventListener('click', function () { restoreBackup($('#backup-text').value); });
+$('#backup-file').addEventListener('change', function (e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function () { restoreBackup(reader.result); };
+  reader.onerror = function () { alert('Không đọc được file.'); };
+  reader.readAsText(f);
+  e.target.value = '';
+});
 $('#set-inspection').addEventListener('change', function (e) {
   settings.inspection = e.target.checked;
   saveSettings();
+});
+$('#set-goaltype').addEventListener('change', function (e) {
+  settings.goalType = e.target.value;
+  saveSettings();
+  renderGoalStatus();
 });
 $('#set-beep').addEventListener('change', function (e) {
   settings.beep = e.target.checked;
@@ -1973,16 +2560,22 @@ $('#set-sounds').addEventListener('change', function (e) {
   if (!settings.recordSounds) { stopBestMusic(); stopHaha(); }
 });
 $('#history-list').addEventListener('click', function (e) {
-  if (lpFired) { lpFired = false; return; } // vừa nhấn giữ xong, đừng mở chi tiết
-  if (selectMode) return; // chế độ chọn: chỉ nhấn giữ mới chọn, bấm thường không làm gì
   const row = e.target.closest('.solve-row');
-  if (row) openDetail(row.dataset.id);
+  if (!row) return;
+  if (selectMode) {
+    // Đang chọn để xóa: chạm 1 cái là chọn/bỏ chọn luôn, không nhấn giữ.
+    const id = row.dataset.id;
+    if (selectedIds.has(id)) { selectedIds.delete(id); row.classList.remove('selected'); }
+    else { selectedIds.add(id); row.classList.add('selected'); }
+    updateDeleteBubble();
+    return;
+  }
+  openDetail(row.dataset.id);
 });
 
-// Chế độ chọn để xóa: bấm nút "Chọn để xóa", rồi nhấn giữ 0.3s vào thẻ để
-// chọn/bỏ chọn (chọn được nhiều lượt). Bong bóng "Xóa (n)" hiện ở góc
-// trên-trái màn hình; bấm vào để xóa các lượt đã chọn (có hỏi xác nhận).
-let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
+// Chế độ chọn để xóa: bấm nút "Chọn để xóa", rồi chạm vào thẻ để chọn/bỏ
+// chọn (chọn được nhiều lượt). Bong bóng "Xóa (n)" hiện ở góc trên-trái
+// màn hình; bấm vào để xóa các lượt đã chọn (có hỏi xác nhận).
 function updateDeleteBubble() {
   const btn = $('#btn-delete-selected');
   if (selectedIds.size === 0) { btn.classList.add('hidden'); return; }
@@ -1998,32 +2591,12 @@ function exitSelectMode() {
   btn.textContent = 'Chọn để xóa';
   btn.classList.remove('active');
 }
-function clearLpTimer() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } }
 $('#btn-select-mode').addEventListener('click', function () {
   if (selectMode) { exitSelectMode(); return; }
   selectMode = true;
   this.textContent = 'Hủy chọn';
   this.classList.add('active');
 });
-$('#history-list').addEventListener('pointerdown', function (e) {
-  lpFired = false; // lần chạm mới thì reset cờ nhấn giữ
-  if (!selectMode) return;
-  const row = e.target.closest('.solve-row');
-  if (!row) return;
-  lpX = e.clientX; lpY = e.clientY;
-  lpTimer = setTimeout(function () {
-    lpFired = true;
-    const id = row.dataset.id;
-    if (selectedIds.has(id)) { selectedIds.delete(id); row.classList.remove('selected'); }
-    else { selectedIds.add(id); row.classList.add('selected'); }
-    updateDeleteBubble();
-  }, 300);
-});
-$('#history-list').addEventListener('pointermove', function (e) {
-  if (lpTimer && (Math.abs(e.clientX - lpX) > 10 || Math.abs(e.clientY - lpY) > 10)) clearLpTimer();
-});
-$('#history-list').addEventListener('pointerup', clearLpTimer);
-$('#history-list').addEventListener('pointercancel', clearLpTimer);
 $('#history-list').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 $('#btn-delete-selected').addEventListener('click', function () {
   if (selectedIds.size === 0) return;
@@ -2041,6 +2614,10 @@ $('#btn-guide').addEventListener('click', function () {
 });
 $('#goal-close').addEventListener('click', hideGoalOverlay);
 $('#detail-close').addEventListener('click', closeDetail);
+$('#detail-err').addEventListener('click', function (e) {
+  const btn = e.target.closest('[data-err]');
+  if (btn) setSolveErr(btn.getAttribute('data-err'));
+});
 $('#detail-save').addEventListener('click', function () {
   const s = solves.find(function (x) { return x.id === detailSolveId; });
   if (s) { s.note = $('#detail-note').value; saveSolves(); }

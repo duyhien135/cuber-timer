@@ -224,6 +224,35 @@
   .recog-slow { font-size: 13px; color: #555; margin-top: 8px; line-height: 1.6; }
   .recog-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
   .recog-btns button.big { padding: 14px 22px; font-size: 17px; font-weight: 700; }
+  /* ---- Màn hình Luyện tập sub-10 (v3.6) ---- */
+  #training-view { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; }
+  .train-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .train-goal-line { font-size: 14px; color: #555; margin-bottom: 12px; line-height: 1.5; }
+  .train-sec { font-size: 15px; font-weight: 700; margin: 16px 0 8px; }
+  .train-card { background: #fff; border: 1px solid #eee; border-radius: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 12px 14px; margin-bottom: 10px; }
+  .train-card.recommended { border-color: #2e7d32; background: #f1f8e9; }
+  .train-card-head { font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .train-badge { font-size: 12px; background: #2e7d32; color: #fff; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .train-desc { font-size: 14px; color: #555; line-height: 1.5; margin: 6px 0; }
+  .train-meta { font-size: 13px; color: #555; margin: 4px 0 8px; line-height: 1.5; }
+  .train-start { width: 100%; padding: 10px; font-weight: 700; }
+  .train-row { display: flex; gap: 8px; }
+  .train-row button { flex: 1; }
+  .ladder-box { background: #f9f9f9; border: 1px solid #eee; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+  .ladder-row { font-size: 14px; line-height: 1.6; padding: 4px 0; border-bottom: 1px solid #eee; }
+  .ladder-row:last-child { border-bottom: none; }
+  .plan-row { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .plan-row:active { background: #eee; }
+  .plan-time { font-weight: 700; white-space: nowrap; }
+  .train-session-line { font-size: 14px; line-height: 1.6; padding: 4px 0; border-bottom: 1px solid #eee; }
+  .train-session-line:last-child { border-bottom: none; }
+  /* Banner phiên tập trên màn Timer: 1 dòng nhỏ dưới scramble. */
+  .training-banner { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 16px 0; background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 10px; padding: 6px 10px; font-size: 13px; }
+  .train-banner-text { flex: 1; min-width: 0; line-height: 1.4; }
+  .train-banner-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .train-mini { padding: 5px 9px; font-size: 12px; border-radius: 999px; }
+  .train-mini.on { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+  .recog-session { font-size: 14px; color: #555; margin: 6px 0; }
   .summary-line { margin: 6px 0; font-size: 15px; line-height: 1.5; }
   .summary-line b { font-family: 'SF Mono', Consolas, monospace; }
   /* Biểu đồ Ao100 theo tuần: cột càng thấp càng tốt (thời gian càng ít). */
@@ -241,6 +270,7 @@
 <div id="timer-view">
   <div id="mode-chips" class="mode-chips hide-while-running"></div>
   <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div><div id="scramble-hint" class="scramble-hint">💡 Bấm vào scramble để xem gợi ý cross + F2L</div></div>
+  <div id="training-banner" class="training-banner hidden hide-while-running"></div>
   <div id="record-box" class="record-box"><div class="rb-title"></div><div class="rb-sub"></div></div>
   <div id="timer-zone">
     <div id="clock" class="clock">0:00.00</div>
@@ -251,6 +281,13 @@
     <button id="btn-split-toggle">✂️ Tách bước: Tắt</button>
     <button id="btn-metro-toggle">🥁 Metronome: Tắt</button>
   </div>
+</div>
+
+<!-- ================= MÀN HÌNH LUYỆN TẬP ================= -->
+<div id="training-view" class="hidden">
+  <div class="train-title">🏋️ Luyện tập sub-10</div>
+  <div class="train-goal-line">Mục tiêu: Ao12 dưới 10s = Cross+F2L ≤ 6,5s + LL ≤ 3,5s. Mỗi bài là 1 phiên 10 lượt, cuối phiên có tóm tắt.</div>
+  <div id="training-body"></div>
 </div>
 
 <!-- ================= TRANG LỊCH SỬ ================= -->
@@ -363,6 +400,7 @@
     <button id="btn-recog-oll">OLL</button>
   </div>
   <div class="recog-sub">Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.</div>
+  <div id="recog-session" class="recog-session hidden"><span id="recog-session-text"></span> <button id="btn-recog-cancel-session">Hủy phiên</button></div>
   <div id="recog-net" class="cube-net"></div>
   <div id="recog-clock" class="recog-clock">0.00</div>
   <div id="recog-answer" class="recog-answer"></div>
@@ -377,6 +415,7 @@
 <!-- ================= THANH ĐIỀU HƯỚNG DƯỚI ================= -->
 <nav class="bottomnav hide-while-running">
   <button id="nav-timer" class="active">⏱<small>Timer</small></button>
+  <button id="nav-training">🏋️<small>Luyện tập</small></button>
   <button id="nav-recog">🧩<small>Nhận diện</small></button>
   <button id="nav-history">☰<small>Lịch sử</small></button>
   <button id="nav-settings">⚙️<small>Cài đặt</small></button>
@@ -460,7 +499,7 @@
 <!-- ================= MODAL TỔNG KẾT BUỔI TẬP ================= -->
 <div id="summary-modal" class="modal hidden">
   <div class="modal-card">
-    <h3>📊 Tổng kết buổi tập</h3>
+    <h3 id="summary-title">📊 Tổng kết buổi tập</h3>
     <div id="summary-body"></div>
     <div class="modal-row">
       <button id="summary-close" class="primary">Đóng</button>
@@ -1029,6 +1068,120 @@ function consistencyCount(times, band) {
   return n;
 }
 
+// --- Bậc thang luyện tập sub-10 (thiết kế của Claude, 21/11/2026) ---
+// Mỗi bậc là mục tiêu Ao12 (giây). Điểm xuất phát: CF 9,3s, LL 4,5s,
+// Full 13s. Lên bậc khi Ao12 đạt mục tiêu ở 3 phiên Full liên tiếp,
+// hoặc 5 lượt liên tiếp dưới mục tiêu.
+const TRAINING_LADDERS = {
+  cf: [8.5, 7.5, 6.5],   // Cross+F2L gộp (tách bước ở lượt Full)
+  ll: [4.0, 3.5],        // LL (tách bước ở lượt Full)
+  full: [12, 11, 10],    // Ao12 Full
+};
+const TRAINING_SESSION_LEN = 10;   // mỗi phiên 10 lượt
+const TRAINING_SLOW_STOPS_MAX = 2; // slow solve: tối đa 2 lượt có dừng / 10 lượt
+const TRAINING_INSPECT_MIN = 8;    // inspection: tối thiểu 8/10 cross đúng kế hoạch
+const TRAINING_F2L_AO12_MS = 5000; // F2L: Ao12 <= 5s
+const TRAINING_RECOG_AVG_MS = 2000;// nhận diện: trung bình <= 2s (ngưỡng duy nhất — chỉnh ở đây)
+const SLOW_BPM_MIN = 60;    // nhịp khởi điểm slow solve: 60 BPM = 1 nước/giây
+const SLOW_BPM_MAX = 180;   // trần nhịp slow: 180 BPM = 3 nước/giây (~75% tốc độ hiện tại ~4 nước/giây)
+const SLOW_BPM_STEP = 1.1;  // mỗi lần tăng nhịp: +10%
+
+// Mục tiêu hiện tại của 1 bậc thang (giây), null nếu đã xong hết.
+function ladderTargetFor(track, rung) {
+  const lad = TRAINING_LADDERS[track];
+  if (!lad || rung < 0 || rung >= lad.length) return null;
+  return lad[rung];
+}
+// Bậc xuất phát của 1 bậc thang: bậc đầu tiên mà Ao12 hiện tại CHƯA đạt.
+// ao12Ms = Ao12 hiện tại (ms, null nếu chưa đủ dữ liệu) -> bậc 0.
+// Đã đạt hết mọi bậc -> lad.length (ladderTargetFor trả null = xong).
+// Đúng bằng mục tiêu thì tính là đã đạt (khớp quy tắc <= trong
+// ladderSessionUpdate), nên bậc đó bị bỏ qua.
+function initialRungFor(track, ao12Ms) {
+  const lad = TRAINING_LADDERS[track];
+  if (!lad) return 0;
+  if (ao12Ms === null || ao12Ms === undefined) return 0;
+  for (let i = 0; i < lad.length; i++) if (ao12Ms > lad[i] * 1000) return i;
+  return lad.length;
+}
+// Chuỗi đo Ao12 CF/LL từ các lượt Full: chỉ lấy lượt có tách bước,
+// loại lượt DNF (time null) và lượt +2 — hai loại này không tính vào
+// Ao12 của bậc thang. Trả mảng {time} để dùng lại averageOf.
+function splitSeries(fullSolves, key) {
+  const out = [];
+  for (let i = 0; i < fullSolves.length; i++) {
+    const s = fullSolves[i];
+    if (!s || s.time === null || s.time === undefined || s.plus2) continue;
+    const sp = s.splits;
+    if (sp && typeof sp[key] === 'number') out.push({ time: sp[key] });
+  }
+  return out;
+}
+// Lên bậc bằng chuỗi 5 lượt: đủ 5 lượt liên tiếp dưới mục tiêu?
+function ladderStreakPromotes(streak5) {
+  return streak5 >= 5;
+}
+// Lên bậc bằng phiên: cập nhật chuỗi phiên đạt mục tiêu sau 1 phiên Full.
+// ao12Ms: Ao12 hiện tại của chuỗi đo (ms, null nếu chưa đủ lượt).
+// Trả { promote, rung, streak } — rung/streak mới sau khi áp dụng.
+function ladderSessionUpdate(track, rung, ao12Ms, streak) {
+  const target = ladderTargetFor(track, rung);
+  if (target === null) return { promote: false, rung: rung, streak: streak };
+  const atTarget = ao12Ms !== null && ao12Ms <= target * 1000;
+  const s = atTarget ? streak + 1 : 0;
+  if (s >= 3) return { promote: true, rung: rung + 1, streak: 0 };
+  return { promote: false, rung: rung, streak: s };
+}
+// Số lần dừng trong 1 mảng lượt giải: lượt được gắn nhãn 'pause'
+// (nhãn lỗi có sẵn — người dùng tự gắn khi thấy mình dừng tìm cặp).
+function countStops(solves) {
+  let n = 0;
+  for (let i = 0; i < solves.length; i++) if (solves[i] && solves[i].err === 'pause') n++;
+  return n;
+}
+// Thống kê 1 phiên: solves = lượt giải trong phiên (đã lọc còn tồn tại),
+// marks = { id: true } với các lượt đánh dấu "đúng kế hoạch" (inspection).
+// Trả { n, valid, avg, best, stops, planned, crossAvg } (avg/best/crossAvg
+// = ms hoặc null; DNF tính vào n nhưng loại khỏi trung bình/tốt nhất).
+function sessionStats(solves, marks) {
+  let valid = 0, sum = 0, best = null, stops = 0, planned = 0;
+  const crosses = [];
+  for (let i = 0; i < solves.length; i++) {
+    const s = solves[i];
+    if (!s) continue;
+    if (s.err === 'pause') stops++;
+    if (marks && marks[s.id]) planned++;
+    if (s.splits && typeof s.splits.cross === 'number') crosses.push(s.splits.cross);
+    if (s.time === null || s.time === undefined) continue;
+    valid++;
+    sum += s.time;
+    if (best === null || s.time < best) best = s.time;
+  }
+  return { n: solves.length, valid: valid,
+           avg: valid ? sum / valid : null, best: best,
+           stops: stops, planned: planned,
+           crossAvg: crosses.length ? meanOf(crosses) : null };
+}
+// Đạt/không đạt của 1 phiên, theo từng bài. ctx: { ao12: ms|null } —
+// Ao12 hiện tại của chuỗi đo (F2L-mode cho bài f2l, Full cho bài full);
+// nếu chưa đủ 12 lượt thì dùng trung bình phiên thay thế. Bài full cần
+// thêm ctx.targetMs = mục tiêu bậc thang Full hiện tại (ms).
+function sessionPassed(drill, stats, ctx) {
+  ctx = ctx || {};
+  if (drill === 'slow') return stats.stops <= TRAINING_SLOW_STOPS_MAX;
+  if (drill === 'inspect') return stats.planned >= TRAINING_INSPECT_MIN;
+  if (drill === 'f2l') {
+    const v = (typeof ctx.ao12 === 'number') ? ctx.ao12 : stats.avg;
+    return v !== null && v <= TRAINING_F2L_AO12_MS;
+  }
+  if (drill === 'full') {
+    const v = (typeof ctx.ao12 === 'number') ? ctx.ao12 : stats.avg;
+    return typeof ctx.targetMs === 'number' && v !== null && v <= ctx.targetMs;
+  }
+  if (drill === 'recog') return stats.avg !== null && stats.avg <= TRAINING_RECOG_AVG_MS;
+  return false;
+}
+
 /* __PURE_END__ */
 
 /* =====================================================================
@@ -1048,6 +1201,7 @@ const LS_DAILY = 'cubetimer.daily_goal.v1';
 const LS_LADDER = 'cubetimer.ladder.v1';
 const LS_STREAK = 'cubetimer.streak.v1';
 const LS_RECOG = 'cubetimer.recog.v1';
+const LS_TRAINING = 'cubetimer.training.v1';
 // Nhãn nguyên nhân cho lượt tệ (gắn trong modal chi tiết, tổng kết cuối
 // buổi cho biết lỗi nào hay gặp nhất = điểm yếu của buổi sau).
 const ERR_LABELS = { pause: 'pause tìm cặp', alg: 'sai alg', cross: 'cross dở', ll: 'khựng LL', other: 'khác' };
@@ -1234,12 +1388,50 @@ function refreshSchedule() {
     saveSchedule();
   }
 }
+// --- Luyện tập sub-10 (v3.6): bậc thang + phiên 10 lượt ---
+// --- training = { rungs: {cf,ll,full}, streaks: {cf,ll,full},
+// ---   slowBpm, slowBpmAt, sessions: [10 phiên gần nhất],
+// ---   active: null | { drill, recogType, startedAt, solveIds: [],
+// ---                    marks: {id: true}, recogTimes: [] } }
+function defaultTraining() {
+  return { rungs: { cf: 0, ll: 0, full: 0 }, streaks: { cf: 0, ll: 0, full: 0 },
+           slowBpm: 60, slowBpmAt: 0, sessions: [], active: null };
+}
+function loadTraining() {
+  try {
+    const t = JSON.parse(localStorage.getItem(LS_TRAINING) || '{}');
+    const d = defaultTraining();
+    if (!t || typeof t !== 'object') return d;
+    if (t.rungs) {
+      const ks = ['cf', 'll', 'full'];
+      for (let i = 0; i < ks.length; i++) {
+        if (typeof t.rungs[ks[i]] === 'number') d.rungs[ks[i]] = Math.max(0, Math.min(9, Math.floor(t.rungs[ks[i]])));
+        if (t.streaks && typeof t.streaks[ks[i]] === 'number') d.streaks[ks[i]] = Math.max(0, Math.min(9, Math.floor(t.streaks[ks[i]])));
+      }
+    }
+    if (typeof t.slowBpm === 'number') d.slowBpm = Math.min(SLOW_BPM_MAX, Math.max(SLOW_BPM_MIN, Math.round(t.slowBpm)));
+    if (typeof t.slowBpmAt === 'number') d.slowBpmAt = t.slowBpmAt;
+    if (Array.isArray(t.sessions)) d.sessions = t.sessions.filter(function (s) { return s && typeof s.drill === 'string'; }).slice(-10);
+    if (t.active && typeof t.active === 'object' && typeof t.active.drill === 'string') {
+      d.active = { drill: t.active.drill,
+                   recogType: (t.active.recogType === 'oll' ? 'oll' : 'pll'),
+                   startedAt: (typeof t.active.startedAt === 'number' ? t.active.startedAt : Date.now()),
+                   solveIds: Array.isArray(t.active.solveIds) ? t.active.solveIds.filter(function (x) { return typeof x === 'string'; }) : [],
+                   marks: (t.active.marks && typeof t.active.marks === 'object' ? t.active.marks : {}),
+                   recogTimes: Array.isArray(t.active.recogTimes) ? t.active.recogTimes.filter(function (x) { return typeof x === 'number'; }) : [] };
+    }
+    return d;
+  } catch (e) { return defaultTraining(); }
+}
+function saveTraining() {
+  try { localStorage.setItem(LS_TRAINING, JSON.stringify(training)); } catch (e) {}
+}
 
 // --- Sao lưu / khôi phục JSON: lịch sử nằm trong localStorage, gỡ app
 // --- hay xóa dữ liệu là mất sạch nên phải có đường xuất ra ngoài.
 // --- Xuất: có cầu native AndroidBackup thì lưu thẳng file vào Download,
 // --- không thì hiện JSON để sao chép tay. Nhập: dán JSON hoặc chọn file.
-const BACKUP_KEYS = [LS_SOLVES, LS_SETTINGS, LS_DAILY, LS_LADDER, LS_STREAK, LS_RECOG, LS_SCHEDULE];
+const BACKUP_KEYS = [LS_SOLVES, LS_SETTINGS, LS_DAILY, LS_LADDER, LS_STREAK, LS_RECOG, LS_SCHEDULE, LS_TRAINING];
 function buildBackupJSON() {
   const data = {};
   for (let i = 0; i < BACKUP_KEYS.length; i++) {
@@ -1335,7 +1527,19 @@ let ladder = loadLadder();
 let streak = loadStreak();
 let recogTimes = loadRecog();
 let schedule = loadSchedule();
-let currentView = 'timer'; // 'timer' | 'history'
+let training = loadTraining();
+// Lần đầu mở bản có Luyện tập (chưa có dữ liệu training lưu): bậc xuất
+// phát tính từ Ao12 hiện tại — bỏ qua các bậc đã đạt, tránh lên bậc ngay
+// lập tức. Đã có dữ liệu thì giữ nguyên tiến độ.
+if (localStorage.getItem(LS_TRAINING) === null) {
+  const tracks0 = ['cf', 'll', 'full'];
+  for (let i = 0; i < tracks0.length; i++) {
+    const r0 = trackAo12(tracks0[i]);
+    training.rungs[tracks0[i]] = initialRungFor(tracks0[i], r0.status === 'ok' ? r0.value : null);
+  }
+  saveTraining();
+}
+let currentView = 'timer'; // 'timer' | 'history' | 'recog' | 'training'
 let detailSolveId = null;
 // Chế độ chọn để xóa trong Lịch sử: bấm nút "Chọn để xóa" rồi chạm vào
 // thẻ để chọn/bỏ chọn (chọn được nhiều lượt).
@@ -1402,6 +1606,9 @@ function loop() {
 // - Đang chạy: dừng. - Đang nhìn trước: bắt đầu giải.
 // - Đang nghỉ: bắt đầu inspection (hoặc giải luôn nếu tắt inspection).
 function handleTap() {
+  // Khung chúc mừng (lên bậc / mục tiêu ngày) không chặn bấm giờ: chạm
+  // là tự đóng khung rồi tiếp tục như bình thường.
+  if (!$('#goal-overlay').classList.contains('hidden')) hideGoalOverlay();
   if (currentView !== 'timer' || modalOpen() || inputFocused()) return;
   ensureAudio();
   if (phase === 'running') {
@@ -1489,12 +1696,14 @@ function stopSolve() {
   // Slow không có kỉ lục: lượt Slow "nhanh nhất" không có nghĩa gì
   // (mục đích là chậm mà không dừng), nên không hiện khung chúc mừng.
   const record = (skipSave || mode === 'slow') ? null : checkRecord(modeSolves(mode), newTime);
+  let saved = null;
   if (!skipSave) {
-    solves.push({
+    saved = {
       id: makeId(), raw: raw, time: newTime,
       plus2: pendingPlus2, scramble: currentScramble, date: Date.now(), note: '',
       mode: mode, splits: splits, case: currentStageCase, err: null,
-    });
+    };
+    solves.push(saved);
     saveSolves();
   }
   currentScramble = generateScrambleFor(mode);
@@ -1509,6 +1718,18 @@ function stopSolve() {
     const goalDone = checkDailyGoal();
     if (!goalDone) checkConsistency();
     checkRestReminder();
+  }
+  // Luyện tập sub-10: đếm lượt vào phiên đang tập (đủ 10 thì tóm tắt),
+  // rồi kiểm tra lên bậc thang bằng chuỗi 5 lượt (chỉ lượt Full). Phiên
+  // vừa kết thúc thì tóm tắt đã ghi nhận bậc thang nên không hiện overlay.
+  if (saved) {
+    const hadActive = !!training.active;
+    trainingOnSolve(saved);
+    const sessionEnded = hadActive && !training.active;
+    if (mode === 'full' && !sessionEnded) {
+      const prom = checkLadders(false);
+      if (prom.length) showGoalOverlay('🎉', 'Lên bậc!', ladderPromoteText(prom));
+    }
   }
 }
 
@@ -1652,11 +1873,13 @@ function metroTick() {
 }
 function startMetronome() {
   stopMetronome();
-  // Mode Slow: luôn bật metronome 60 BPM (1 nước/giây) dù cài đặt tắt —
-  // nhịp chậm đều là điểm mấu chốt của bài lookahead.
+  // Mode Slow: luôn bật metronome dù cài đặt tắt — nhịp chậm đều là điểm
+  // mấu chốt của bài lookahead. Nhịp bắt đầu 60 BPM (1 nước/giây, đúng
+  // nhịp slow solve chuẩn trong guide) và tăng 10% mỗi tuần khi phiên
+  // slow đạt mục tiêu (tối đa 180 BPM = 3 nước/giây).
   const isSlow = (settings.mode || 'full') === 'slow';
   if (!settings.metronome && !isSlow) return;
-  const bpm = isSlow ? 60 : (settings.metronomeBpm || 120);
+  const bpm = isSlow ? (training.slowBpm || SLOW_BPM_MIN) : (settings.metronomeBpm || 120);
   metroTimer = setInterval(metroTick, 60000 / bpm);
 }
 function stopMetronome() {
@@ -1931,6 +2154,7 @@ function renderTimer() {
   $('#scramble-hint').classList.toggle('hidden', m !== 'full' && m !== 'f2l' && m !== 'slow');
   $('#stats-row').innerHTML = statsRowHTML();
   updateClock();
+  renderTrainingBanner();
 }
 
 // +2 / DNF cho một lượt giải (dùng trong chi tiết Lịch sử).
@@ -1958,13 +2182,14 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Khung chúc mừng (goal-overlay) KHÔNG tính là modal ở đây: nó không
+// chặn bấm giờ — handleTap tự đóng nó rồi tiếp tục như bình thường.
 function modalOpen() {
   return !$('#detail-modal').classList.contains('hidden') ||
     !$('#settings-modal').classList.contains('hidden') ||
     !$('#summary-modal').classList.contains('hidden') ||
     !$('#backup-modal').classList.contains('hidden') ||
-    !$('#hint-modal').classList.contains('hidden') ||
-    !$('#goal-overlay').classList.contains('hidden');
+    !$('#hint-modal').classList.contains('hidden');
 }
 function inputFocused() {
   const el = document.activeElement;
@@ -1973,6 +2198,7 @@ function inputFocused() {
 
 function setNav(view) {
   $('#nav-timer').classList.toggle('active', view === 'timer');
+  $('#nav-training').classList.toggle('active', view === 'training');
   $('#nav-recog').classList.toggle('active', view === 'recog');
   $('#nav-history').classList.toggle('active', view === 'history');
 }
@@ -1982,6 +2208,7 @@ function showHistory() {
   currentView = 'history';
   $('#timer-view').classList.add('hidden');
   $('#recog-view').classList.add('hidden');
+  $('#training-view').classList.add('hidden');
   $('#history-view').classList.remove('hidden');
   setNav('history');
   renderHistory();
@@ -1990,6 +2217,7 @@ function showTimer() {
   currentView = 'timer';
   $('#history-view').classList.add('hidden');
   $('#recog-view').classList.add('hidden');
+  $('#training-view').classList.add('hidden');
   $('#timer-view').classList.remove('hidden');
   setNav('timer');
   renderTimer();
@@ -1999,9 +2227,20 @@ function showRecog() {
   currentView = 'recog';
   $('#timer-view').classList.add('hidden');
   $('#history-view').classList.add('hidden');
+  $('#training-view').classList.add('hidden');
   $('#recog-view').classList.remove('hidden');
   setNav('recog');
   renderRecog();
+}
+function showTraining() {
+  cancelTiming();
+  currentView = 'training';
+  $('#timer-view').classList.add('hidden');
+  $('#recog-view').classList.add('hidden');
+  $('#history-view').classList.add('hidden');
+  $('#training-view').classList.remove('hidden');
+  setNav('training');
+  renderTraining();
 }
 
 // --- Gợi ý bài hôm nay theo F2L/LL/pause trung bình (20 lượt Full gần nhất).
@@ -2198,6 +2437,7 @@ function renderToggles() {
 }
 // --- Tổng kết buổi tập (lượt giải hôm nay ở chế độ hiện tại) ---
 function openSummary() {
+  $('#summary-title').textContent = '📊 Tổng kết buổi tập';
   $('#summary-body').innerHTML = buildSummaryHTML();
   $('#summary-modal').classList.remove('hidden');
 }
@@ -2389,6 +2629,7 @@ function recogGotIt() {
   recogTimes.push({ c: recogCase.name, t: ms, date: Date.now(), y: recogType });
   saveRecog();
   renderRecogStats();
+  trainingOnRecog(ms, recogType);
 }
 function renderRecogStats() {
   const el = $('#recog-stats');
@@ -2412,6 +2653,7 @@ function renderRecogStats() {
 }
 function renderRecog() {
   renderRecogStats();
+  renderRecogSessionLine();
 }
 
 /* =====================================================================
@@ -3139,17 +3381,20 @@ function getHintWorker() {
 // Mở panel gợi ý cho scramble hiện tại. Mặc định panel ẩn; chỉ mở khi
 // bấm vào scramble. Chỉ có ý nghĩa ở chế độ Full/F2L/Slow (scramble đủ
 // 20 nước); ở OLL/PLL cross đã xong sẵn nên không mở.
-function openHintPanel() {
+function openHintPanel(scramble) {
   var mode = settings.mode || 'full';
-  if (mode !== 'full' && mode !== 'f2l' && mode !== 'slow') return;
-  hintCurrentScramble = currentScramble;
+  // Scramble truyền vào (bài inspection: scramble của lượt vừa giải) thì
+  // tin luôn, không cần kiểm tra mode hiện tại.
+  if (!scramble && mode !== 'full' && mode !== 'f2l' && mode !== 'slow') return;
+  var sc = scramble || currentScramble;
+  hintCurrentScramble = sc;
   $('#hint-modal').classList.remove('hidden');
-  renderHintBody(currentScramble);
-  if (!hintCache[currentScramble]) {
+  renderHintBody(sc);
+  if (!hintCache[sc]) {
     var w = getHintWorker();
     if (w) {
       hintReqId++;
-      w.postMessage({ type: 'solve', id: hintReqId, scramble: currentScramble });
+      w.postMessage({ type: 'solve', id: hintReqId, scramble: sc });
     } else {
       $('#hint-body').innerHTML = '<p class="note">Trình duyệt không chạy được tính nền, không tính được gợi ý.</p>';
     }
@@ -3196,6 +3441,396 @@ function renderHintBody(scramble) {
 }
 
 /* =====================================================================
+   PHẦN 5D: LUYỆN TẬP SUB-10 (v3.6) — 5 bài tập theo thiết kế của Claude
+   (21/11/2026). Mỗi bài là 1 phiên 10 lượt; chọn thẻ thì đặt mode +
+   mục tiêu rồi về màn Timer với banner nhỏ.
+   ===================================================================== */
+const TRAINING_DRILLS = [
+  { id: 'slow', icon: '🐢', name: 'Slow solve cross+F2L', mode: 'slow',
+    desc: 'Giải chậm theo metronome, mắt tìm cặp tiếp theo, không được dừng. Bài quan trọng nhất cho điểm nghẽn cross+F2L.',
+    goal: '≤ 2 lượt có dừng / 10 lượt' },
+  { id: 'inspect', icon: '👀', name: 'Inspection cross + cặp đầu', mode: 'full',
+    desc: 'Trong 15s nhìn trước, tự lên kế hoạch cross + cặp đầu. Giải xong bấm 💡 để so với gợi ý, bấm ✓ nếu cross đúng như kế hoạch. Bài này tự bật Tách bước để đo thời gian cross (chạm 4 lần mỗi lượt).',
+    goal: '≥ 8/10 cross đúng kế hoạch' },
+  { id: 'f2l', icon: '🧩', name: 'F2L từ cross đã xong', mode: 'f2l',
+    desc: 'Chỉ luyện 4 cặp F2L, không tính cross. Đo Ao12 riêng của chế độ F2L.',
+    goal: 'Ao12 F2L ≤ 5s' },
+  { id: 'recog', icon: '🔍', name: 'Drill nhận diện OLL/PLL', mode: null,
+    desc: 'Nhận diện case từ hình khối. 5 case chậm nhất được bốc nhiều gấp 3 lần.',
+    goal: 'Nhận diện trung bình ≤ 2s' },
+  { id: 'full', icon: '⏱️', name: 'Full solve tính giờ', mode: 'full',
+    desc: 'Giải đủ cả khối để đo tiến bộ — không phải bài tập chính, chỉ để đo.',
+    goal: 'Ao12 ≤ mục tiêu bậc thang' },
+];
+function drillById(id) {
+  for (let i = 0; i < TRAINING_DRILLS.length; i++) if (TRAINING_DRILLS[i].id === id) return TRAINING_DRILLS[i];
+  return null;
+}
+const TRACK_NAMES = { cf: 'Cross+F2L', ll: 'LL', full: 'Ao12 Full' };
+
+// Chuỗi đo của 1 bậc thang, dạng mảng {time} để dùng lại averageOf /
+// streakCountIn. CF/LL lấy từ tách bước ở lượt Full.
+function trackSeries(track) {
+  if (track === 'full') return modeSolves('full');
+  return splitSeries(modeSolves('full'), track === 'cf' ? 'f2l' : 'll');
+}
+function trackAo12(track) { return averageOf(trackSeries(track), 12); }
+function trackStreak5(track) {
+  const t = ladderTargetFor(track, training.rungs[track]);
+  if (t === null) return 0;
+  return streakCountIn(trackSeries(track), t);
+}
+
+// Kiểm tra lên bậc cho cả 3 bậc thang (tối đa 1 rung / bậc thang / lần gọi).
+// sessionEnded: true nếu vừa kết thúc 1 phiên Full (áp dụng thêm quy tắc
+// 3 phiên liên tiếp đạt Ao12). Trả danh sách bậc thang đã lên bậc.
+function checkLadders(sessionEnded) {
+  const promoted = [];
+  const tracks = ['cf', 'll', 'full'];
+  for (let i = 0; i < tracks.length; i++) {
+    const tr = tracks[i];
+    const t = ladderTargetFor(tr, training.rungs[tr]);
+    if (t === null) continue;
+    // Quy tắc 5 lượt liên tiếp dưới mục tiêu.
+    if (ladderStreakPromotes(trackStreak5(tr))) {
+      training.rungs[tr]++;
+      training.streaks[tr] = 0;
+      promoted.push(tr);
+      continue;
+    }
+    if (sessionEnded) {
+      const r = trackAo12(tr);
+      const up = ladderSessionUpdate(tr, training.rungs[tr], r.status === 'ok' ? r.value : null, training.streaks[tr]);
+      training.rungs[tr] = up.rung;
+      training.streaks[tr] = up.streak;
+      if (up.promote) promoted.push(tr);
+    }
+  }
+  if (promoted.length) saveTraining();
+  return promoted;
+}
+function ladderPromoteText(promoted) {
+  return promoted.map(function (tr) {
+    const t = ladderTargetFor(tr, training.rungs[tr]);
+    return TRACK_NAMES[tr] + ' lên bậc mới' + (t === null ? ' — đã đạt mục tiêu cuối!' : ': mục tiêu ' + fmtTarget(t) + 's');
+  }).join('<br>');
+}
+
+// --- Phiên đang tập ---
+function activeSessionSolves() {
+  if (!training.active) return [];
+  const ids = training.active.solveIds;
+  const out = [];
+  for (let i = 0; i < ids.length; i++) {
+    const s = solves.find(function (x) { return x.id === ids[i]; });
+    if (s) out.push(s);
+  }
+  return out;
+}
+function sessionCount() {
+  if (!training.active) return 0;
+  if (training.active.drill === 'recog') return training.active.recogTimes.length;
+  return activeSessionSolves().length;
+}
+function lastSessionSolve() {
+  const arr = activeSessionSolves();
+  return arr.length ? arr[arr.length - 1] : null;
+}
+function startDrill(id, recogType) {
+  if (phase !== 'idle') return; // đang bấm giờ thì không đổi bài
+  const d = drillById(id);
+  if (!d) return;
+  if (training.active && sessionCount() > 0 && training.active.drill !== id) {
+    if (!confirm('Đang tập dở ' + drillById(training.active.drill).name + ' (' + sessionCount() + '/10). Bỏ phiên này để bắt đầu bài mới?')) return;
+  }
+  training.active = { drill: id, recogType: (recogType === 'oll' ? 'oll' : 'pll'),
+    startedAt: Date.now(), solveIds: [], marks: {}, recogTimes: [] };
+  saveTraining();
+  if (id === 'recog') {
+    setRecogType(training.active.recogType);
+    showRecog();
+    return;
+  }
+  // Bài inspection cần đo thời gian cross: tự bật Tách bước.
+  if (id === 'inspect' && !settings.splitMode) {
+    settings.splitMode = true;
+    saveSettings();
+    renderToggles();
+  }
+  setMode(d.mode);
+  showTimer();
+}
+function cancelSession() {
+  if (!training.active) return;
+  if (sessionCount() > 0 && !confirm('Hủy phiên tập đang dở (' + sessionCount() + '/10)?')) return;
+  training.active = null;
+  saveTraining();
+  renderTimer();
+  renderRecogSessionLine();
+  if (currentView === 'training') renderTraining();
+}
+// Gọi sau mỗi lượt giải đã lưu: đếm vào phiên nếu đúng mode của bài.
+function trainingOnSolve(s) {
+  if (!training.active || !s) return;
+  const d = drillById(training.active.drill);
+  if (!d || !d.mode) return; // bài recog không đếm lượt giải
+  if ((s.mode || 'full') !== d.mode) return;
+  if (training.active.solveIds.indexOf(s.id) !== -1) return;
+  training.active.solveIds.push(s.id);
+  saveTraining();
+  renderTrainingBanner();
+  if (sessionCount() >= TRAINING_SESSION_LEN) endSession();
+}
+// Gọi sau mỗi lần nhận diện xong (bài recog).
+function trainingOnRecog(ms, type) {
+  if (!training.active || training.active.drill !== 'recog') return;
+  if (type !== training.active.recogType) return;
+  training.active.recogTimes.push(ms);
+  saveTraining();
+  renderRecogSessionLine();
+  if (training.active.recogTimes.length >= TRAINING_SESSION_LEN) endSession();
+}
+function endSession() {
+  const a = training.active;
+  if (!a) return;
+  const d = drillById(a.drill);
+  let stats, ctx = {}, extra = '';
+  if (a.drill === 'recog') {
+    const times = a.recogTimes.slice();
+    stats = { n: times.length, valid: times.length,
+              avg: meanOf(times), best: times.length ? Math.min.apply(null, times) : null,
+              stops: 0, planned: 0, crossAvg: null };
+  } else {
+    stats = sessionStats(activeSessionSolves(), a.marks);
+    if (a.drill === 'f2l') {
+      const r = averageOf(modeSolves('f2l'), 12);
+      ctx.ao12 = r.status === 'ok' ? r.value : null;
+    } else if (a.drill === 'full') {
+      const r = averageOf(modeSolves('full'), 12);
+      ctx.ao12 = r.status === 'ok' ? r.value : null;
+      const t = ladderTargetFor('full', training.rungs.full);
+      ctx.targetMs = (t === null ? null : t * 1000);
+    }
+  }
+  const passed = sessionPassed(a.drill, stats, ctx);
+  training.sessions.push({ drill: a.drill, date: Date.now(), n: stats.n,
+    avg: stats.avg, best: stats.best, stops: stats.stops, planned: stats.planned,
+    ao12: (typeof ctx.ao12 === 'number' ? ctx.ao12 : null), passed: passed });
+  if (training.sessions.length > 10) training.sessions.splice(0, training.sessions.length - 10);
+  training.active = null;
+  // Slow solve đạt mục tiêu: tăng nhịp metronome 10% nếu đã ≥ 7 ngày
+  // từ lần tăng trước (tối đa 180 BPM = 3 nước/giây).
+  if (a.drill === 'slow' && passed) {
+    const week = 7 * 24 * 3600 * 1000;
+    if (Date.now() - (training.slowBpmAt || 0) >= week) {
+      training.slowBpm = Math.min(SLOW_BPM_MAX, Math.round(training.slowBpm * SLOW_BPM_STEP));
+      training.slowBpmAt = Date.now();
+      extra = 'Nhịp metronome slow solve tăng lên ' + training.slowBpm + ' BPM.';
+    }
+  }
+  // Quy tắc lên bậc bằng 3 phiên (chỉ phiên Full — có dữ liệu tách bước);
+  // checkLadders(true) cũng áp dụng luôn quy tắc 5 lượt.
+  let promoted = [];
+  if (d.mode === 'full') promoted = checkLadders(true);
+  saveTraining();
+  renderTimer();
+  renderRecogSessionLine();
+  if (currentView === 'training') renderTraining();
+  showSessionSummary(d, stats, ctx, passed, extra, promoted);
+}
+// Tóm tắt cuối phiên: dùng lại modal tổng kết có sẵn, đổi tiêu đề.
+function showSessionSummary(d, stats, ctx, passed, extra, promoted) {
+  let h = '';
+  h += '<div class="summary-line">Bài tập: <b>' + d.icon + ' ' + escapeHtml(d.name) + '</b> · Số lượt: <b>' + stats.n + '</b></div>';
+  if (stats.valid) {
+    h += '<div class="summary-line">Trung bình: <b>' + fmtAvg(stats.avg) + '</b> · Nhanh nhất: <b>' + fmt(stats.best) + '</b></div>';
+  } else {
+    h += '<div class="summary-line">Cả phiên đều DNF — không tính được trung bình.</div>';
+  }
+  if (d.id === 'slow') h += '<div class="summary-line">Số lượt có dừng: <b>' + stats.stops + '/10</b> (mục tiêu ≤ ' + TRAINING_SLOW_STOPS_MAX + ', tự báo cáo bằng nút ⏸)</div>';
+  if (d.id === 'inspect') {
+    h += '<div class="summary-line">Cross đúng kế hoạch: <b>' + stats.planned + '/10</b> (mục tiêu ≥ ' + TRAINING_INSPECT_MIN + ')</div>';
+    if (stats.crossAvg !== null) h += '<div class="summary-line">Thời gian cross trung bình: <b>' + fmt(stats.crossAvg) + '</b></div>';
+  }
+  if (d.id === 'f2l') h += '<div class="summary-line">Ao12 F2L hiện tại: <b>' + (typeof ctx.ao12 === 'number' ? fmtAvg(ctx.ao12) : 'chưa đủ 12 lượt') + '</b> (mục tiêu ≤ 5s) · đánh giá theo ' + (typeof ctx.ao12 === 'number' ? 'Ao12' : 'trung bình phiên') + '</div>';
+  if (d.id === 'full') h += '<div class="summary-line">Ao12 Full hiện tại: <b>' + (typeof ctx.ao12 === 'number' ? fmtAvg(ctx.ao12) : 'chưa đủ 12 lượt') + '</b>' + (typeof ctx.targetMs === 'number' ? ' (mục tiêu ≤ ' + fmt(ctx.targetMs) + ')' : '') + ' · đánh giá theo ' + (typeof ctx.ao12 === 'number' ? 'Ao12' : 'trung bình phiên') + '</div>';
+  h += '<div class="summary-line">' + (passed ? '✅ <b>Đạt mục tiêu phiên!</b>' : '❌ <b>Chưa đạt</b> — tập thêm phiên nữa nhé.') + '</div>';
+  if (extra) h += '<div class="summary-line">🎵 ' + escapeHtml(extra) + '</div>';
+  if (promoted.length) h += '<div class="summary-line">🎉 ' + ladderPromoteText(promoted) + '</div>';
+  $('#summary-title').textContent = '📊 Tổng kết phiên — ' + d.name;
+  $('#summary-body').innerHTML = h;
+  $('#summary-modal').classList.remove('hidden');
+}
+
+// --- Banner phiên tập trên màn Timer ---
+function renderTrainingBanner() {
+  const el = $('#training-banner');
+  if (!el) return;
+  const a = training.active;
+  if (!a || currentView !== 'timer') { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const d = drillById(a.drill);
+  if (!d) { el.classList.add('hidden'); return; }
+  const n = sessionCount();
+  let goalTxt = d.goal;
+  let extraBtns = '';
+  const last = lastSessionSolve();
+  if (a.drill === 'slow') {
+    goalTxt = 'dừng ' + countStops(activeSessionSolves()) + '/' + TRAINING_SLOW_STOPS_MAX;
+    extraBtns = '<button id="train-mark-stop" class="train-mini' + ((last && last.err === 'pause') ? ' on' : '') + '" title="Lượt vừa rồi có dừng tìm cặp">⏸ Dừng</button>';
+  } else if (a.drill === 'inspect') {
+    goalTxt = 'đúng KH ' + sessionStats(activeSessionSolves(), a.marks).planned + '/' + TRAINING_INSPECT_MIN;
+    extraBtns = '<button id="train-mark-plan" class="train-mini' + ((last && a.marks[last.id]) ? ' on' : '') + '" title="Cross đúng như kế hoạch">✓ Đúng KH</button>' +
+      '<button id="train-hint" class="train-mini" title="So với gợi ý cross + cặp F2L">💡 So gợi ý</button>';
+  }
+  el.innerHTML = '<span class="train-banner-text">' + d.icon + ' ' + escapeHtml(d.name) + ' · ' + n + '/' + TRAINING_SESSION_LEN + ' · ' + escapeHtml(goalTxt) + '</span>' +
+    '<span class="train-banner-btns">' + extraBtns + '<button id="train-cancel" class="train-mini" title="Hủy phiên">✕</button></span>';
+  el.classList.remove('hidden');
+}
+function toggleLastStop() {
+  const s = lastSessionSolve();
+  if (!s) return;
+  s.err = (s.err === 'pause') ? null : 'pause';
+  saveSolves();
+  renderTimer();
+}
+function toggleLastPlanned() {
+  const a = training.active;
+  if (!a || a.drill !== 'inspect') return;
+  const s = lastSessionSolve();
+  if (!s) return;
+  if (a.marks[s.id]) delete a.marks[s.id]; else a.marks[s.id] = true;
+  saveTraining();
+  renderTimer();
+}
+function openLastHint() {
+  const s = lastSessionSolve();
+  if (!s) return;
+  openHintPanel(s.scramble);
+}
+function renderRecogSessionLine() {
+  const el = $('#recog-session');
+  if (!el) return;
+  const a = training.active;
+  if (!a || a.drill !== 'recog') { el.classList.add('hidden'); return; }
+  const n = a.recogTimes.length;
+  const avg = n ? meanOf(a.recogTimes) : null;
+  $('#recog-session-text').textContent = '🔍 Drill nhận diện ' + a.recogType.toUpperCase() + ' · ' + n + '/' + TRAINING_SESSION_LEN +
+    ' · trung bình ' + (avg === null ? '—' : (avg / 1000).toFixed(2) + 's') + ' (mục tiêu ≤ 2s)';
+  el.classList.remove('hidden');
+}
+
+// Bài nên tập hôm nay — cùng ngưỡng với todaySuggestion().
+// Chưa có dữ liệu tách bước thì mặc định slow solve (bài ưu tiên nhất).
+function suggestedDrill() {
+  const sa = splitsAvg(modeSolves('full').slice(-20));
+  if (!sa) return 'slow';
+  if (sa.f2l !== null && sa.f2l > 7000) return 'slow';
+  if (sa.ll !== null && sa.ll > 4000) return 'recog';
+  if (sa.pause > 1000) return 'slow';
+  return 'full';
+}
+function drillMetricLine(id) {
+  if (id === 'slow') {
+    return '🥁 Nhịp metronome hiện tại: <b>' + training.slowBpm + ' BPM</b> (1 nhịp = 1 nước)' +
+      ' <button data-slow-bpm="-1" title="Giảm 1 bậc (10%)">−</button>' +
+      ' <button data-slow-bpm="1" title="Tăng 1 bậc (10%)">+</button>' +
+      (training.slowBpm > SLOW_BPM_MIN ? ' <button data-slow-reset="1">↩ về 60</button>' : '');
+  }
+  if (id === 'inspect') {
+    const sa = splitsAvg(modeSolves('full').slice(-20));
+    return 'Cross trung bình (20 lượt gần nhất): <b>' + (sa && sa.cross !== null ? fmt(sa.cross) : 'chưa có') + '</b>';
+  }
+  if (id === 'f2l') {
+    const r = averageOf(modeSolves('f2l'), 12);
+    return 'Ao12 F2L hiện tại: <b>' + (r.status === 'ok' ? fmtAvg(r.value) : 'chưa đủ 12 lượt') + '</b>';
+  }
+  if (id === 'recog') {
+    const pll = recogTimes.filter(function (r) { return (r.y || 'pll') === 'pll'; });
+    const oll = recogTimes.filter(function (r) { return r.y === 'oll'; });
+    const avg = function (arr) { return arr.length ? (meanOf(arr.map(function (r) { return r.t; })) / 1000).toFixed(2) + 's' : 'chưa có'; };
+    return 'Nhận diện PLL trung bình: <b>' + avg(pll) + '</b> · OLL: <b>' + avg(oll) + '</b>';
+  }
+  const r = averageOf(modeSolves('full'), 12);
+  return 'Ao12 Full hiện tại: <b>' + (r.status === 'ok' ? fmtAvg(r.value) : 'chưa đủ 12 lượt') + '</b>';
+}
+function renderTraining() {
+  const el = $('#training-body');
+  if (!el) return;
+  let h = '';
+  // Phiên đang tập.
+  if (training.active) {
+    const d = drillById(training.active.drill);
+    if (d) {
+      h += '<div class="ladder-box"><b>▶ Đang tập: ' + d.icon + ' ' + escapeHtml(d.name) + ' (' + sessionCount() + '/' + TRAINING_SESSION_LEN + ')</b><br>' +
+        '<div class="train-row" style="margin-top:8px;"><button data-train-goto="1" class="primary">Về màn tập</button><button data-train-cancel="1">Hủy phiên</button></div></div>';
+    }
+  }
+  // Bậc thang.
+  h += '<div class="train-sec">🎯 Bậc thang sub-10</div><div class="ladder-box">';
+  const tracks = ['cf', 'll', 'full'];
+  for (let i = 0; i < tracks.length; i++) {
+    const tr = tracks[i];
+    const rung = training.rungs[tr];
+    const target = ladderTargetFor(tr, rung);
+    const r = trackAo12(tr);
+    const lad = TRAINING_LADDERS[tr];
+    h += '<div class="ladder-row"><b>' + TRACK_NAMES[tr] + '</b>: Ao12 ' +
+      (r.status === 'ok' ? fmtAvg(r.value) : 'chưa đủ dữ liệu') + ' · ' +
+      (target === null ? '✅ Đã đạt mục tiêu cuối ' + fmtTarget(lad[lad.length - 1]) + 's' :
+        'mục tiêu ≤ ' + fmtTarget(target) + 's (bậc ' + (rung + 1) + '/' + lad.length + ', ' + training.streaks[tr] + '/3 phiên)') +
+      '</div>';
+  }
+  h += '</div>';
+  // Gợi ý hôm nay.
+  h += '<div class="today-suggestion">' + todaySuggestion() + '</div>';
+  // Các thẻ bài.
+  h += '<div class="train-sec">📋 Bài tập</div>';
+  const sug = suggestedDrill();
+  for (let i = 0; i < TRAINING_DRILLS.length; i++) {
+    const d = TRAINING_DRILLS[i];
+    const rec = (d.id === sug);
+    h += '<div class="train-card' + (rec ? ' recommended' : '') + '">' +
+      '<div class="train-card-head"><span>' + d.icon + ' ' + escapeHtml(d.name) + '</span>' + (rec ? '<span class="train-badge">💡 Gợi ý hôm nay</span>' : '') + '</div>' +
+      '<div class="train-desc">' + escapeHtml(d.desc) + '</div>' +
+      '<div class="train-meta">🎯 Mục tiêu: ' + escapeHtml(d.goal) + '<br>' + drillMetricLine(d.id) + '</div>';
+    if (d.id === 'recog') {
+      h += '<div class="train-row"><button class="train-start" data-train-start="recog" data-recog-type="pll">Bắt đầu — PLL</button><button class="train-start" data-train-start="recog" data-recog-type="oll">Bắt đầu — OLL</button></div>';
+    } else {
+      h += '<button class="train-start primary" data-train-start="' + d.id + '">Bắt đầu</button>';
+    }
+    h += '</div>';
+  }
+  // Buổi tập mẫu 25 phút.
+  h += '<div class="train-sec">🕐 Buổi tập mẫu — 25 phút</div><div class="ladder-box">';
+  const plan = [
+    { t: '5 phút', label: 'Khởi động — full solve tính giờ', drill: 'full' },
+    { t: '10 phút', label: 'Slow solve cross+F2L', drill: 'slow' },
+    { t: '5 phút', label: 'F2L từ cross đã xong', drill: 'f2l' },
+    { t: '5 phút', label: 'Full solve tính giờ — đo lại', drill: 'full' },
+  ];
+  for (let i = 0; i < plan.length; i++) {
+    h += '<div class="plan-row" data-train-plan="' + plan[i].drill + '"><span class="plan-time">' + plan[i].t + '</span><span>' + escapeHtml(plan[i].label) + '</span></div>';
+  }
+  h += '</div>';
+  // Phiên gần đây.
+  if (training.sessions.length) {
+    h += '<div class="train-sec">📜 Phiên gần đây</div><div class="ladder-box">';
+    const recent = training.sessions.slice(-5).reverse();
+    for (let i = 0; i < recent.length; i++) {
+      const s = recent[i];
+      const dd = drillById(s.drill);
+      h += '<div class="train-session-line">' + (s.passed ? '✅' : '❌') + ' ' + (dd ? dd.icon + ' ' + escapeHtml(dd.name) : escapeHtml(s.drill)) +
+        ' · ' + (s.avg !== null ? fmtAvg(s.avg) : 'DNF') +
+        (s.drill === 'slow' ? ' · dừng ' + s.stops + '/10' : '') +
+        (s.drill === 'inspect' ? ' · đúng KH ' + s.planned + '/10' : '') +
+        ' · ' + new Date(s.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + '</div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+/* =====================================================================
    PHẦN 6: SỰ KIỆN VÀ KHỞI ĐỘNG
    ===================================================================== */
 
@@ -3210,7 +3845,7 @@ document.addEventListener('pointerup', function (e) {
   // Đang chạy giờ: nhả tay ở BẤT CỨ đâu cũng dừng — kể cả khi tay trượt
   // hay chạm trúng nút (lúc chạy các nút đã ẩn, nhưng tay đập mạnh hay trượt).
   if (phase === 'running') { handleTap(); return; }
-  if (modalOpen()) return; // khung chúc mừng / modal đang mở: chạm không làm gì
+  if (modalOpen()) return; // modal đang mở: chạm không làm gì (khung chúc mừng thì handleTap tự đóng)
   if (e.target.closest('button, a, input, select, textarea, label')) return;
   if (performance.now() - lastSwipeAt < 150) return; // vừa lướt xong
   handleTap();
@@ -3236,7 +3871,7 @@ $('#timer-view').addEventListener('contextmenu', function (e) { e.preventDefault
 
 // Lướt ngang để chuyển màn hình: lướt sang phải -> Lịch sử, lướt sang trái -> Timer.
 // (Chạm nhả tự bỏ qua khi đang lướt nên lướt không làm chạy giờ.)
-let swipeX = null, swipeY = null, lastSwipeAt = 0;
+let swipeX = null, swipeY = null, lastSwipeAt = -1000; // -1000: chưa lướt lần nào (để 0 thì guard "vừa lướt xong" chặn chạm trong 150ms đầu sau khi tải trang)
 document.addEventListener('touchstart', function (e) {
   if (e.touches.length !== 1 || modalOpen() || inputFocused()) { swipeX = null; return; }
   swipeX = e.touches[0].clientX;
@@ -3285,8 +3920,45 @@ $('#schedule-box').addEventListener('click', function (e) {
   if (row) toggleSchedule(parseInt(row.getAttribute('data-sch'), 10));
 });
 $('#nav-timer').addEventListener('click', showTimer);
+$('#nav-training').addEventListener('click', showTraining);
 $('#nav-recog').addEventListener('click', showRecog);
 $('#nav-settings').addEventListener('click', openSettings);
+// Nút trong banner phiên tập (banner vẽ lại mỗi lần nên dùng ủy quyền).
+$('#training-banner').addEventListener('click', function (e) {
+  const t = e.target;
+  if (t.id === 'train-mark-stop') toggleLastStop();
+  else if (t.id === 'train-mark-plan') toggleLastPlanned();
+  else if (t.id === 'train-hint') openLastHint();
+  else if (t.id === 'train-cancel') cancelSession();
+});
+// Nút trong mục Luyện tập (nội dung vẽ lại mỗi lần nên dùng ủy quyền).
+$('#training-view').addEventListener('click', function (e) {
+  const btn = e.target.closest('[data-train-start],[data-train-cancel],[data-train-goto],[data-train-plan],[data-slow-reset],[data-slow-bpm]');
+  if (!btn) return;
+  if (btn.dataset.trainStart) startDrill(btn.dataset.trainStart, btn.dataset.recogType);
+  else if (btn.dataset.trainCancel) cancelSession();
+  else if (btn.dataset.trainGoto) {
+    if (training.active && training.active.drill === 'recog') showRecog(); else showTimer();
+  }
+  else if (btn.dataset.trainPlan) startDrill(btn.dataset.trainPlan);
+  else if (btn.dataset.slowBpm) {
+    // Tự chỉnh nhịp slow: tăng/giảm 1 bậc (10%), trong [60, 180] BPM.
+    // Chỉnh tay không động vào slowBpmAt (mốc 7 ngày của tăng tự động).
+    const up = btn.dataset.slowBpm === '1';
+    training.slowBpm = up
+      ? Math.min(SLOW_BPM_MAX, Math.round(training.slowBpm * SLOW_BPM_STEP))
+      : Math.max(SLOW_BPM_MIN, Math.round(training.slowBpm / SLOW_BPM_STEP));
+    saveTraining();
+    renderTraining();
+  }
+  else if (btn.dataset.slowReset) {
+    training.slowBpm = SLOW_BPM_MIN;
+    training.slowBpmAt = 0;
+    saveTraining();
+    renderTraining();
+  }
+});
+$('#btn-recog-cancel-session').addEventListener('click', cancelSession);
 $('#set-split').addEventListener('change', function (e) {
   settings.splitMode = e.target.checked;
   saveSettings();

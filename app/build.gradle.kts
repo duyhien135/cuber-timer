@@ -39,7 +39,7 @@ android {
         applicationId = "com.example.cubetimer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 26
+        versionCode = 27
         versionName = "3.6"
     }
 

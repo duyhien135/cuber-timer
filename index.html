@@ -1706,7 +1706,12 @@ function stopSolve() {
     solves.push(saved);
     saveSolves();
   }
-  currentScramble = generateScrambleFor(mode);
+  // Lượt dưới 5s bị bỏ thì GIỮ scramble hiện tại để giải lại đúng
+  // scramble đó (chỉ bỏ lượt, không đổi scramble). Scramble mới chỉ
+  // sinh khi lượt được lưu thật.
+  if (!skipSave) {
+    currentScramble = generateScrambleFor(mode);
+  }
   phase = 'idle';
   document.body.classList.remove('running');
   stopLoop();

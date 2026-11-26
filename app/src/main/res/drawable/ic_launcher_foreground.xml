@@ -4,14 +4,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Mat Rubik 3x3, moi o 18x18, cach nhau 2px, bat dau tu (25, 25). -->
-    <path android:fillColor="#FFFFFF" android:pathData="M25,25 h18 v18 h-18 z" />
-    <path android:fillColor="#D50000" android:pathData="M45,25 h18 v18 h-18 z" />
-    <path android:fillColor="#1565C0" android:pathData="M65,25 h18 v18 h-18 z" />
-    <path android:fillColor="#00A651" android:pathData="M25,45 h18 v18 h-18 z" />
-    <path android:fillColor="#FFD500" android:pathData="M45,45 h18 v18 h-18 z" />
-    <path android:fillColor="#FF6D00" android:pathData="M65,45 h18 v18 h-18 z" />
-    <path android:fillColor="#1565C0" android:pathData="M25,65 h18 v18 h-18 z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M45,65 h18 v18 h-18 z" />
-    <path android:fillColor="#00A651" android:pathData="M65,65 h18 v18 h-18 z" />
+    <!-- Chu H do tren nen trang. -->
+    <path android:fillColor="#D50000" android:pathData="M28,28 h14 v52 h-14 z" />
+    <path android:fillColor="#D50000" android:pathData="M66,28 h14 v52 h-14 z" />
+    <path android:fillColor="#D50000" android:pathData="M42,47 h24 v14 h-24 z" />
 </vector>

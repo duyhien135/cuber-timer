@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>tdung cuti</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='37' y='8' width='26' height='26' rx='4' fill='%23d50000'/%3E%3Crect x='66' y='8' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='8' y='37' width='26' height='26' rx='4' fill='%2300a651'/%3E%3Crect x='37' y='37' width='26' height='26' rx='4' fill='%23ffd500'/%3E%3Crect x='66' y='37' width='26' height='26' rx='4' fill='%23ff6d00'/%3E%3Crect x='8' y='66' width='26' height='26' rx='4' fill='%231565c0'/%3E%3Crect x='37' y='66' width='26' height='26' rx='4' fill='%23ffffff'/%3E%3Crect x='66' y='66' width='26' height='26' rx='4' fill='%2300a651'/%3E%3C/svg%3E">
+<title>Hiển</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff'/%3E%3Cpath d='M28 20h16v60H28zM56 20h16v60H56zM44 42h12v16H44z' fill='%23d50000'/%3E%3C/svg%3E">
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -248,6 +248,12 @@
   .train-session-line:last-child { border-bottom: none; }
   /* Banner phiên tập trên màn Timer: 1 dòng nhỏ dưới scramble. */
   .training-banner { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 16px 0; background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 10px; padding: 6px 10px; font-size: 13px; }
+  /* Banner mốc ngày kế hoạch slow turning 2 tháng (v3.7). */
+  .slow-plan-banner { margin: 10px 16px 0; background: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; padding: 10px 14px; text-align: center; }
+  .slow-plan-banner .slow-day { font-size: 20px; font-weight: 700; color: #e65100; }
+  .slow-plan-banner .slow-sub { font-size: 13px; color: #8d6e63; margin-top: 2px; }
+  .slow-plan-banner.done { background: #e8f5e9; border-color: #2e7d32; }
+  .slow-plan-banner.done .slow-day { color: #2e7d32; }
   .train-banner-text { flex: 1; min-width: 0; line-height: 1.4; }
   .train-banner-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .train-mini { padding: 5px 9px; font-size: 12px; border-radius: 999px; }
@@ -269,6 +275,7 @@
 <!-- ================= MÀN HÌNH TIMER ================= -->
 <div id="timer-view">
   <div id="mode-chips" class="mode-chips hide-while-running"></div>
+  <div id="slow-plan-banner" class="slow-plan-banner hide-while-running"></div>
   <div class="scramble-wrap hide-while-running"><div class="scramble-frame"><div id="scramble" class="scramble"></div></div><div id="scramble-hint" class="scramble-hint">💡 Bấm vào scramble để xem gợi ý cross + F2L</div></div>
   <div id="training-banner" class="training-banner hidden hide-while-running"></div>
   <div id="record-box" class="record-box"><div class="rb-title"></div><div class="rb-sub"></div></div>
@@ -904,6 +911,40 @@ const MODES = [
 function modeName(mode) {
   for (let i = 0; i < MODES.length; i++) if (MODES[i].id === mode) return MODES[i].name;
   return 'Full';
+}
+
+// --- Kế hoạch slow turning 2 tháng (v3.7) ---
+// --- Bắt đầu 26/11/2026, 60 ngày, hết ngày 24/01/2027. Trong hạn thì app
+// --- mặc định mở Slow và khóa Full; sau ngày 60 thì Full mở lại bình thường.
+const SLOW_PLAN_START = { y: 2026, m: 10, d: 26 }; // tháng 10 = tháng 11
+const SLOW_PLAN_DAYS = 60;
+function slowPlanDay() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = new Date(SLOW_PLAN_START.y, SLOW_PLAN_START.m, SLOW_PLAN_START.d);
+  const diff = Math.round((today - start) / 86400000) + 1;
+  if (diff < 1) return 0; // chưa tới ngày bắt đầu
+  if (diff > SLOW_PLAN_DAYS) return SLOW_PLAN_DAYS + 1; // đã xong 60 ngày
+  return diff;
+}
+function slowPlanActive() { const d = slowPlanDay(); return d >= 1 && d <= SLOW_PLAN_DAYS; }
+function renderSlowPlanBanner() {
+  const el = document.getElementById('slow-plan-banner');
+  if (!el) return;
+  const d = slowPlanDay();
+  if (d >= 1 && d <= SLOW_PLAN_DAYS) {
+    el.classList.remove('hidden', 'done');
+    el.innerHTML = '<div class="slow-day">ngày thứ ' + d + '...</div>' +
+      '<div class="slow-sub">Slow turning 2 tháng — còn ' + (SLOW_PLAN_DAYS - d) + ' ngày nữa</div>';
+  } else if (d > SLOW_PLAN_DAYS) {
+    el.classList.remove('hidden');
+    el.classList.add('done');
+    el.innerHTML = '<div class="slow-day">Đã xong 2 tháng slow turning!</div>' +
+      '<div class="slow-sub">Full đã mở khóa — giải thoải mái nhé</div>';
+  } else {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+  }
 }
 // Case của scramble hiện tại (chế độ PLL): tên case, để lưu vào lượt giải.
 let currentStageCase = null;
@@ -2160,6 +2201,7 @@ function renderTimer() {
   $('#stats-row').innerHTML = statsRowHTML();
   updateClock();
   renderTrainingBanner();
+  renderSlowPlanBanner();
 }
 
 // +2 / DNF cho một lượt giải (dùng trong chi tiết Lịch sử).
@@ -2423,6 +2465,11 @@ function renderModeChips(where) {
 }
 function setMode(mode) {
   if (phase !== 'idle') return; // đang bấm giờ thì không đổi chế độ
+  // Kế hoạch slow turning: chưa hết 60 ngày thì khóa Full, giữ ở Slow.
+  if (mode === 'full' && slowPlanActive()) {
+    alert('Bạn chưa hoàn thành hạn 2 tháng slow turning, quay lại Slow nhé!');
+    mode = 'slow';
+  }
   settings.mode = mode;
   saveSettings();
   currentScramble = generateScrambleFor(mode);
@@ -4157,6 +4204,8 @@ $('#set-bpm').value = settings.metronomeBpm || 120;
 $('#set-hidetime').checked = !!settings.hideTime;
 $('#set-sounds').checked = settings.recordSounds !== false;
 if (!settings.mode) settings.mode = 'full';
+// Kế hoạch slow turning 2 tháng (v3.7): đang trong hạn thì mở app là Slow.
+if (slowPlanActive()) settings.mode = 'slow';
 currentScramble = generateScrambleFor(settings.mode);
 renderModeChips('timer');
 renderToggles();

@@ -224,6 +224,10 @@
   .recog-slow { font-size: 13px; color: #555; margin-top: 8px; line-height: 1.6; }
   .recog-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
   .recog-btns button.big { padding: 14px 22px; font-size: 17px; font-weight: 700; }
+  .recog-btns button.stop { background: #c62828; border-color: #c62828; color: #fff; }
+  .alg-qmark { font-size: 120px; font-weight: 700; color: #ccc; line-height: 1.1; margin: 8px 0 16px; }
+  .alg-setup { font-size: 15px; line-height: 1.6; margin: 4px 0 12px; }
+  .alg-setup b { font-family: 'SF Mono', Consolas, monospace; }
   /* ---- Màn hình Luyện tập sub-10 (v3.6) ---- */
   #training-view { padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 80px; max-width: 860px; margin: 0 auto; width: 100%; }
   .train-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
@@ -406,14 +410,24 @@
     <button id="btn-recog-pll" class="active">PLL</button>
     <button id="btn-recog-oll">OLL</button>
   </div>
-  <div class="recog-sub">Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.</div>
+  <div class="recog-type">
+    <button id="btn-drill-recog" class="active">Nhận diện</button>
+    <button id="btn-drill-alg">Luyện alg</button>
+  </div>
+  <div id="recog-sub" class="recog-sub">Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.</div>
+  <div id="alg-progress" class="recog-sub hidden"></div>
   <div id="recog-session" class="recog-session hidden"><span id="recog-session-text"></span> <button id="btn-recog-cancel-session">Hủy phiên</button></div>
   <div id="recog-net" class="cube-net"></div>
+  <div id="alg-qmark" class="alg-qmark hidden">?</div>
+  <div id="alg-setup" class="alg-setup hidden"></div>
   <div id="recog-clock" class="recog-clock">0.00</div>
   <div id="recog-answer" class="recog-answer"></div>
   <div class="recog-btns">
     <button id="btn-recog-new" class="primary big">Case mới</button>
     <button id="btn-recog-gotit" class="big" disabled>Nhận ra rồi!</button>
+    <button id="btn-alg-ready" class="primary big hidden">Sẵn sàng</button>
+    <button id="btn-alg-stop" class="big stop hidden">DỪNG</button>
+    <button id="btn-alg-next" class="primary big hidden">Case tiếp</button>
   </div>
   <div id="recog-stats" class="recog-stats"></div>
   <div id="recog-slow" class="recog-slow"></div>
@@ -1242,6 +1256,7 @@ const LS_DAILY = 'cubetimer.daily_goal.v1';
 const LS_LADDER = 'cubetimer.ladder.v1';
 const LS_STREAK = 'cubetimer.streak.v1';
 const LS_RECOG = 'cubetimer.recog.v1';
+const LS_ALGDRILL = 'cubetimer.algdrill.v1';
 const LS_TRAINING = 'cubetimer.training.v1';
 // Nhãn nguyên nhân cho lượt tệ (gắn trong modal chi tiết, tổng kết cuối
 // buổi cho biết lỗi nào hay gặp nhất = điểm yếu của buổi sau).
@@ -1560,6 +1575,16 @@ function loadRecog() {
 function saveRecog() {
   try { localStorage.setItem(LS_RECOG, JSON.stringify(recogTimes)); } catch (e) {}
 }
+function loadAlgTimes() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_ALGDRILL) || '[]');
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (r) { return r && typeof r.c === 'string' && typeof r.t === 'number'; });
+  } catch (e) { return []; }
+}
+function saveAlgTimes() {
+  try { localStorage.setItem(LS_ALGDRILL, JSON.stringify(algTimes)); } catch (e) {}
+}
 
 let solves = loadSolves();
 let settings = loadSettings();
@@ -1567,6 +1592,7 @@ let daily = loadDaily();
 let ladder = loadLadder();
 let streak = loadStreak();
 let recogTimes = loadRecog();
+let algTimes = loadAlgTimes();
 let schedule = loadSchedule();
 let training = loadTraining();
 // Lần đầu mở bản có Luyện tập (chưa có dữ liệu training lưu): bậc xuất
@@ -2252,6 +2278,7 @@ function setNav(view) {
 
 function showHistory() {
   cancelTiming();
+  algCancel();
   currentView = 'history';
   $('#timer-view').classList.add('hidden');
   $('#recog-view').classList.add('hidden');
@@ -2261,6 +2288,7 @@ function showHistory() {
   renderHistory();
 }
 function showTimer() {
+  algCancel();
   currentView = 'timer';
   $('#history-view').classList.add('hidden');
   $('#recog-view').classList.add('hidden');
@@ -2281,6 +2309,7 @@ function showRecog() {
 }
 function showTraining() {
   cancelTiming();
+  algCancel();
   currentView = 'training';
   $('#timer-view').classList.add('hidden');
   $('#recog-view').classList.add('hidden');
@@ -2612,6 +2641,9 @@ function setRecogType(t) {
   $('#recog-answer').textContent = '';
   $('#btn-recog-gotit').disabled = true;
   renderRecogStats();
+  // Đang ở chế độ Luyện alg: đổi loại (PLL/OLL) thì bốc lại bộ bài
+  // và về giai đoạn setup của loại mới.
+  if (algMode === 'alg') { algBuildDeck(); algNextSetup(); }
 }
 // Lưới hình khối: mặt U ở giữa + hàng trên của 4 mặt bên (chỉ số facelet,
 // null = ô trống). Thứ tự các hàng bên đã xoay cho đúng hướng nhìn từ trên.
@@ -2704,8 +2736,160 @@ function renderRecogStats() {
   }
 }
 function renderRecog() {
-  renderRecogStats();
+  if (algMode === 'alg') renderAlgStats();
+  else renderRecogStats();
   renderRecogSessionLine();
+}
+
+// --- Drill luyện alg có bấm giờ (kiểu CubeResolver): xem hình case,
+// --- xáo ngược để ra case, đếm 3-2-1 rồi giải alg, bấm DỪNG để chốt giờ.
+// --- Tự chứa: bộ bài riêng (chỉ trong bộ nhớ) + LS riêng (LS_ALGDRILL),
+// --- không dính tới thang tập / phiên tập.
+let algMode = 'recog'; // 'recog' | 'alg'
+let algState = 'idle'; // 'idle' | 'countdown' | 'running' | 'done'
+let algDeck = [], algDeckPos = 0, algCase = null;
+let algStart = 0, algRaf = null, algCountTimers = [];
+function algClearCountdown() {
+  for (let i = 0; i < algCountTimers.length; i++) clearTimeout(algCountTimers[i]);
+  algCountTimers = [];
+}
+function algCancel() {
+  algClearCountdown();
+  if (algRaf) cancelAnimationFrame(algRaf);
+  algState = 'idle';
+  if (algMode === 'alg' && algCase) algRenderSetup();
+}
+function algBuildDeck() {
+  const list = recogList();
+  algDeck = list.slice();
+  for (let i = algDeck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = algDeck[i]; algDeck[i] = algDeck[j]; algDeck[j] = tmp;
+  }
+  algDeckPos = 0;
+}
+function algRenderSetup() {
+  let state = applyAlg(solvedState(), invertAlg(algCase.alg));
+  if (recogType === 'oll' && typeof pureOriState !== 'undefined') state = pureOriState(state);
+  renderRecogNet(stateToFacelets(state));
+  $('#recog-net').classList.remove('hidden');
+  $('#alg-qmark').classList.add('hidden');
+  $('#alg-setup').classList.remove('hidden');
+  $('#alg-setup').innerHTML = 'Xáo ngược để ra case: <b>' + escapeHtml(invertAlg(algCase.alg)) + '</b>';
+  $('#alg-progress').textContent = 'Đã luyện ' + (algDeckPos - 1) + '/' + algDeck.length + ' · ' + algCase.name;
+  $('#recog-clock').textContent = '0.00';
+  $('#recog-answer').textContent = '';
+  $('#btn-alg-ready').classList.remove('hidden');
+  $('#btn-alg-stop').classList.add('hidden');
+  $('#btn-alg-next').classList.add('hidden');
+}
+function algNextSetup() {
+  algCancel();
+  if (!algDeck.length || algDeckPos >= algDeck.length) algBuildDeck();
+  algCase = algDeck[algDeckPos++];
+  algRenderSetup();
+  renderAlgStats();
+}
+function algStartCountdown() {
+  if (algState !== 'idle' || !algCase) return;
+  algClearCountdown();
+  if (algRaf) cancelAnimationFrame(algRaf);
+  algState = 'countdown';
+  $('#recog-net').classList.add('hidden');
+  $('#alg-qmark').classList.remove('hidden');
+  $('#alg-setup').classList.add('hidden');
+  $('#recog-answer').textContent = '';
+  $('#btn-alg-ready').classList.add('hidden');
+  let n = 3;
+  const showNum = function () {
+    if (algState !== 'countdown') return;
+    if (n <= 0) { algStartTimer(); return; }
+    $('#recog-clock').textContent = String(n);
+    n--;
+    algCountTimers.push(setTimeout(showNum, 1000));
+  };
+  showNum();
+}
+function algStartTimer() {
+  if (algState !== 'countdown') return;
+  algState = 'running';
+  $('#alg-qmark').classList.add('hidden');
+  $('#recog-net').classList.remove('hidden');
+  $('#recog-answer').innerHTML = escapeHtml(algCase.disp || algCase.alg);
+  $('#btn-alg-stop').classList.remove('hidden');
+  algStart = performance.now();
+  if (algRaf) cancelAnimationFrame(algRaf);
+  const tick = function () {
+    if (algState !== 'running') return;
+    $('#recog-clock').textContent = ((performance.now() - algStart) / 1000).toFixed(2);
+    algRaf = requestAnimationFrame(tick);
+  };
+  algRaf = requestAnimationFrame(tick);
+}
+function algStop() {
+  if (algState !== 'running') return;
+  algState = 'done';
+  if (algRaf) cancelAnimationFrame(algRaf);
+  const ms = Math.floor((performance.now() - algStart) / 10) * 10;
+  $('#recog-clock').textContent = (ms / 1000).toFixed(2);
+  $('#recog-answer').innerHTML = escapeHtml(algCase.name) + ' · ' + (ms / 1000).toFixed(2) + 's<small>' + escapeHtml(algCase.disp || algCase.alg) + '</small>';
+  $('#btn-alg-stop').classList.add('hidden');
+  $('#btn-alg-next').classList.remove('hidden');
+  $('#alg-progress').textContent = 'Đã luyện ' + algDeckPos + '/' + algDeck.length + ' · ' + algCase.name;
+  algTimes.push({ c: algCase.name, t: ms, date: Date.now(), y: recogType });
+  saveAlgTimes();
+  renderAlgStats();
+}
+function renderAlgStats() {
+  const el = $('#recog-stats');
+  const arr = algTimes.filter(function (r) { return (r.y || 'pll') === recogType; });
+  if (!arr.length) {
+    el.textContent = 'Chưa có lượt luyện alg ' + recogType.toUpperCase() + ' nào.';
+  } else {
+    const times = arr.map(function (r) { return r.t; });
+    const last5 = times.slice(-5);
+    el.innerHTML = 'Số lượt: <b>' + times.length + '</b> · Nhanh nhất: <b>' +
+      (Math.min.apply(null, times) / 1000).toFixed(2) + 's</b> · Trung bình 5 lượt gần nhất: <b>' +
+      (meanOf(last5) / 1000).toFixed(2) + 's</b>';
+  }
+  const slowEl = $('#recog-slow');
+  if (slowEl) {
+    const ranked = caseAvgList(arr.map(function (r) { return { c: r.c, t: r.t }; }));
+    slowEl.innerHTML = ranked.length >= 3
+      ? 'Top 5 case ' + recogType.toUpperCase() + ' chậm nhất: <b>' + ranked.slice(0, 5).map(function (r) { return r.c + ' ' + (r.avg / 1000).toFixed(2) + 's'; }).join(' · ') + '</b>'
+      : '';
+  }
+}
+function setDrillMode(m) {
+  algMode = m;
+  $('#btn-drill-recog').classList.toggle('active', m === 'recog');
+  $('#btn-drill-alg').classList.toggle('active', m === 'alg');
+  if (m === 'alg') {
+    recogState = 'idle';
+    if (recogRaf) cancelAnimationFrame(recogRaf);
+    $('#recog-sub').textContent = 'Xáo ngược theo hướng dẫn, bấm "Sẵn sàng", đếm 3-2-1 rồi giải alg thật nhanh.';
+    $('#btn-recog-new').classList.add('hidden');
+    $('#btn-recog-gotit').classList.add('hidden');
+    $('#alg-progress').classList.remove('hidden');
+    algBuildDeck();
+    algNextSetup();
+  } else {
+    algCancel();
+    $('#recog-sub').textContent = 'Nhìn hình, nhận ra case nào rồi bấm "Nhận ra rồi!" — không cần giải.';
+    $('#alg-progress').classList.add('hidden');
+    $('#alg-setup').classList.add('hidden');
+    $('#alg-qmark').classList.add('hidden');
+    $('#btn-alg-ready').classList.add('hidden');
+    $('#btn-alg-stop').classList.add('hidden');
+    $('#btn-alg-next').classList.add('hidden');
+    $('#btn-recog-new').classList.remove('hidden');
+    $('#btn-recog-gotit').classList.remove('hidden');
+    $('#recog-net').classList.remove('hidden');
+    $('#recog-clock').textContent = '0.00';
+    $('#recog-answer').textContent = '';
+    $('#btn-recog-gotit').disabled = true;
+    renderRecogStats();
+  }
 }
 
 /* =====================================================================
@@ -3947,6 +4131,17 @@ document.addEventListener('touchend', function (e) {
 window.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') { closeDetail(); closeSettings(); closeSummary(); closeHintPanel(); hideGoalOverlay(); return; }
   if (inputFocused() || modalOpen()) return;
+  // Màn Nhận diện, chế độ Luyện alg: Space là nút chính theo từng giai đoạn
+  // (setup -> đếm 3-2-1; đang chạy -> dừng; lúc đếm thì không làm gì).
+  if (currentView === 'recog' && algMode === 'alg') {
+    if (e.repeat) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (algState === 'idle') algStartCountdown();
+      else if (algState === 'running') algStop();
+    }
+    return;
+  }
   if (currentView !== 'timer') return;
   if (e.repeat) return;
   if (e.code === 'Space') {
@@ -4059,6 +4254,14 @@ $('#btn-recog-new').addEventListener('click', recogNewCase);
 $('#btn-recog-gotit').addEventListener('click', recogGotIt);
 $('#btn-recog-pll').addEventListener('click', function () { setRecogType('pll'); });
 $('#btn-recog-oll').addEventListener('click', function () { setRecogType('oll'); });
+$('#btn-drill-recog').addEventListener('click', function () { setDrillMode('recog'); });
+$('#btn-drill-alg').addEventListener('click', function () { setDrillMode('alg'); });
+$('#btn-alg-ready').addEventListener('click', algStartCountdown);
+$('#btn-alg-stop').addEventListener('click', algStop);
+$('#btn-alg-next').addEventListener('click', algNextSetup);
+// Chạm vào đồng hồ / hình khối lúc đang chạy cũng dừng (như bấm DỪNG).
+$('#recog-clock').addEventListener('click', function () { if (algMode === 'alg' && algState === 'running') algStop(); });
+$('#recog-net').addEventListener('click', function () { if (algMode === 'alg' && algState === 'running') algStop(); });
 // Bấm chip chế độ (ở cả màn Timer và Lịch sử).
 document.addEventListener('click', function (e) {
   const chip = e.target.closest('[data-mode]');
